@@ -301,6 +301,7 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
       boolean eof;  // End of file. Everything requested has been read.
       boolean cancel;
       Error error;  // error occurred, abort requested.
+      long startTime = System.currentTimeMillis();
       while (true) {
         final long start;
         final int chunkSize;
@@ -365,6 +366,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 //          LogUtils.warnWithException(LOG,
 //              "Exception occurred while reading data for read request {}.", mContext.getRequest(),
 //              e);
+          LOG.warn("Exception occurred while reading data for read request {}, and it took {} ms", mContext.getRequest(),
+                  (System.currentTimeMillis() - startTime));
           LOG.warn("Exception occurred while reading data for read request {}.", mContext.getRequest(),
           e);
           setError(new Error(AlluxioStatusException.fromThrowable(e), true));
