@@ -106,7 +106,7 @@ public class OSSInputStream extends MultiRangeObjectInputStream {
         // measure the performance of oss
 //        if (LOG.isDebugEnabled()) {
         start = System.currentTimeMillis();
-        LOG.debug("Open OSS Key {} at {}", mKey, start);
+        LOG.info("Open OSS Key {} with startPos {} at {}", mKey, startPos, start);
 //        }
         OSSObject ossObject = mOssClient.getObject(req);
         LOG.debug("Calling OSS getObject method took: {} ms", (System.currentTimeMillis()-start));
