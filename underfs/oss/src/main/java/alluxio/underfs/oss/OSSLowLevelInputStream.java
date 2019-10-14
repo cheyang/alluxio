@@ -159,15 +159,18 @@ public class OSSLowLevelInputStream extends MultiRangeObjectInputStream {
             throws IOException {
         LOG.debug("the taskNum: {} and the partition size is {}", taskNum, mStreamingDownloadPartitionSize);
         DownloadFileRequest req = new DownloadFileRequest(mBucketName, mKey);
+        // Set the start Pos and end Pos
+        // req.setRange(startPos, endPos);
         // Sets the concurrent task thread count 5. By default it's 1.
         req.setTaskNum(taskNum);
-        // Sets the part size, by default it's 1K.
+        // Sets the part size, by default it's 2MB.
         req.setPartSize(mStreamingDownloadPartitionSize);
         // Enable checkpoint.
         req.setEnableCheckpoint(false);
 
         // Create the temp file
-        File tmpFile = new File(PathUtils.concatPath(CommonUtils.getTmpDir(mTmpDirs), mKey));
+        String fileName = mKey + "-" + Long.toString(startPos);
+        File tmpFile = new File(PathUtils.concatPath(CommonUtils.getTmpDir(mTmpDirs), fileName));
         boolean created = tmpFile.getParentFile().mkdirs();
         LOG.debug("the tmp directory is created: "+ created);
         // Set the download file.
