@@ -366,8 +366,11 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 //          LogUtils.warnWithException(LOG,
 //              "Exception occurred while reading data for read request {}.", mContext.getRequest(),
 //              e);
+          long currentTime = System.currentTimeMillis();
+          LOG.warn("Exception occurred while reading data for read request {} at {}", mContext.getRequest().getId(),
+                 currentTime);
           LOG.warn("Exception occurred while reading data for read request {}, and it took {} ms", mContext.getRequest(),
-                  (System.currentTimeMillis() - startTime));
+                  (currentTime - startTime));
           LOG.warn("Exception occurred while reading data for read request {}.", mContext.getRequest(),
           e);
           setError(new Error(AlluxioStatusException.fromThrowable(e), true));
