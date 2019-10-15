@@ -121,7 +121,9 @@ public class OSSInputStream extends MultiRangeObjectInputStream {
         // Key does not exist
         lastException = e;
       } finally {
-        LOG.debug("Calling createStreamWithPartition took: {} ms", (System.currentTimeMillis()-start));
+        long end = System.currentTimeMillis();
+        LOG.info("Open OSS Key {} and get stream with startPos {} at {}", mKey, startPos, end);
+        LOG.info("Calling createStream took: {} ms", (end-start));
       }
     }
     // Failed after retrying key does not exist
