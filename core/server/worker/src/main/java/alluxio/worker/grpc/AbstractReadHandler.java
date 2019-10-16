@@ -380,7 +380,10 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
         }
       }
 
+      long currentTime = System.currentTimeMillis();
       if (error != null) {
+        LOG.info("End reading data for read request {} for session {} end at {} with error {}", mContext.getRequest().getId(),
+                mContext.getRequest().getSessionId(), currentTime, error);
         try {
           // mRequest is null if an exception is thrown when initializing mRequest.
           if (mRequest != null) {
@@ -391,6 +394,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
         }
         replyError(error);
       } else if (eof || cancel) {
+        LOG.info("End reading data for read request {} for session {} end at {} successfully.", mContext.getRequest().getId(),
+                mContext.getRequest().getSessionId(), currentTime);
         try {
           completeRequest(mContext);
         } catch (Exception e) {
