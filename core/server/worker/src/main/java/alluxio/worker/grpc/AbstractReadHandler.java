@@ -302,8 +302,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
       boolean cancel;
       Error error;  // error occurred, abort requested.
       long startTime = System.currentTimeMillis();
-      LOG.info("Begin read data for read request {} for session {} begin at {}", mContext.getRequest().getId(),
-              mContext.getRequest().getSessionId(), startTime);
+      LOG.info("Begin read data for read request {} for session {} from {} to {} begin at {}", mContext.getRequest().getId(),
+              mContext.getRequest().getSessionId(), mContext.getRequest().getStart(), mContext.getRequest().getEnd(), startTime);
       while (true) {
         final long start;
         final int chunkSize;
