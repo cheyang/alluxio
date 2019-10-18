@@ -110,7 +110,8 @@ public class OSSInputStream extends MultiRangeObjectInputStream {
 //        }
         OSSObject ossObject = mOssClient.getObject(req);
         LOG.debug("Calling OSS getObject method took: {} ms", (System.currentTimeMillis()-start));
-        BufferedInputStream inputStream = new BufferedInputStream(ossObject.getObjectContent());
+//        BufferedInputStream inputStream = new BufferedInputStream(ossObject.getObjectContent());
+        InputStream inputStream = ossObject.getObjectContent();
         LOG.info("OSSInputStream Buffer {} is for opening key {} in bucket {}", inputStream, mKey, mBucketName);
         return inputStream;
       } catch (OSSException e) {
