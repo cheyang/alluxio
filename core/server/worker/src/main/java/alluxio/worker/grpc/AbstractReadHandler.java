@@ -302,8 +302,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
       boolean cancel;
       Error error;  // error occurred, abort requested.
       long startTime = System.currentTimeMillis();
-      LOG.info("Begin read data for read request {} for session {} from {} to {} begin at {}", mContext.getRequest().getId(),
-              mContext.getRequest().getSessionId(), mContext.getRequest().getStart(), mContext.getRequest().getEnd(), startTime);
+      LOG.info("Begin read data for read request {} for session {} from {} to {} begin at {} on thread {}", mContext.getRequest().getId(),
+              mContext.getRequest().getSessionId(), mContext.getRequest().getStart(), mContext.getRequest().getEnd(), startTime, Thread.currentThread().getId());
       while (true) {
         final long start;
         final int chunkSize;
@@ -382,8 +382,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 
       long currentTime = System.currentTimeMillis();
       if (error != null) {
-        LOG.info("End reading data for read request {} for session {} end at {} with error {}", mContext.getRequest().getId(),
-                mContext.getRequest().getSessionId(), currentTime, error);
+        LOG.info("End reading data for read request {} for session {} end at {} failed with error {} on thread {}", mContext.getRequest().getId(),
+                mContext.getRequest().getSessionId(), currentTime, error, Thread.currentThread().getId());
         try {
           // mRequest is null if an exception is thrown when initializing mRequest.
           if (mRequest != null) {
@@ -394,8 +394,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
         }
         replyError(error);
       } else if (eof || cancel) {
-        LOG.info("End reading data for read request {} for session {} end at {} successfully.", mContext.getRequest().getId(),
-                mContext.getRequest().getSessionId(), currentTime);
+        LOG.info("End reading data for read request {} for session {} end at {} successfully on thread {}.", mContext.getRequest().getId(),
+                mContext.getRequest().getSessionId(), currentTime, Thread.currentThread().getId());
         try {
           completeRequest(mContext);
         } catch (Exception e) {
