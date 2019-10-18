@@ -12,6 +12,8 @@
 package alluxio.underfs;
 
 import alluxio.exception.ExceptionMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +26,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public abstract class MultiRangeObjectInputStream extends InputStream {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MultiRangeObjectInputStream.class);
   /** Has the stream been closed. */
   protected boolean mClosed;
   /** The backing input stream. */
@@ -77,6 +80,7 @@ public abstract class MultiRangeObjectInputStream extends InputStream {
       return 0;
     }
     openStream();
+    LOG.info("read stream {} offset {} and length {}", mStream, offset, length);
     int read = mStream.read(b, offset, length);
     if (read != -1) {
       mPos += read;
@@ -93,6 +97,7 @@ public abstract class MultiRangeObjectInputStream extends InputStream {
     closeStream();
     mPos += n;
     openStream();
+    LOG.info("skip stream {} with {}", mStream, n);
     return n;
   }
 
@@ -145,5 +150,6 @@ public abstract class MultiRangeObjectInputStream extends InputStream {
     final long endPos = mPos + mMultiRangeChunkSize - (mPos % mMultiRangeChunkSize);
     mEndPos = endPos;
     mStream = createStream(mPos, endPos);
+    LOG.info("create stream {}", mStream);
   }
 }
