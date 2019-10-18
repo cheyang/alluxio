@@ -86,7 +86,7 @@ public class OSSAbortableInputStream extends InputStream {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         closeStream();
     }
 
