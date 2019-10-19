@@ -131,8 +131,9 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
           request, e);
       mSerializingExecutor.execute(() -> mResponseObserver
           .onError(AlluxioStatusException.fromCheckedException(e).toGrpcStatusException()));
+    }finally {
+      LOG.debug("Received read request's session id {}.", mContext.getRequest().getSessionId());
     }
-    LOG.debug("Received read request's session id {}.", mContext.getRequest().getSessionId());
   }
 
   /**
