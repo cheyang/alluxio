@@ -132,6 +132,7 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
       mSerializingExecutor.execute(() -> mResponseObserver
           .onError(AlluxioStatusException.fromCheckedException(e).toGrpcStatusException()));
     }
+    LOG.debug("Received read request's session id {}.", mContext.getRequest().getSessionId());
   }
 
   /**
@@ -302,8 +303,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
       boolean cancel;
       Error error;  // error occurred, abort requested.
       long startTime = System.currentTimeMillis();
-      LOG.info("Begin read data for read request {} for session {} from {} to {} begin at {} on thread {}", mContext.getRequest().getId(),
-              mContext.getRequest().getSessionId(), mContext.getRequest().getStart(), mContext.getRequest().getEnd(), startTime, Thread.currentThread().getId());
+      LOG.info("Begin read data for read request {} for session {} from {} to {} with init chunk size {} begin at {} on thread {}", mContext.getRequest().getId(),
+              mContext.getRequest().getSessionId(), mContext.getPosToQueue(), mContext.getRequest().getEnd(), mChunkSize, startTime, Thread.currentThread().getId());
       while (true) {
         final long start;
         final int chunkSize;
@@ -325,6 +326,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 
         DataBuffer chunk = null;
         try {
+          LOG.info("On read data for read request {} for session {} from {} to {} with chunk size {}  on thread {}", mContext.getRequest().getId(),
+                  mContext.getRequest().getSessionId(), mContext.getPosToQueue(),  chunkSize,  Thread.currentThread().getId());
           chunk = getDataBuffer(mContext, mResponse, start, chunkSize);
           if (chunk != null) {
             try (LockResource lr = new LockResource(mLock)) {
@@ -359,6 +362,8 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
                 setError(new Error(AlluxioStatusException.fromThrowable(e), true));
               } finally {
                 if (finalChunk != null) {
+                  LOG.info("End read data for read request {} for session {} with size {} on thread {}.", mContext.getRequest().getId(),
+                          mContext.getRequest().getSessionId(), finalChunk.getLength(), Thread.currentThread().getId());
                   finalChunk.release();
                 }
               }
@@ -382,7 +387,7 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 
       long currentTime = System.currentTimeMillis();
       if (error != null) {
-        LOG.info("End reading data for read request {} for session {} end at {} failed with error {} on thread {}", mContext.getRequest().getId(),
+        LOG.info("End read data for read request {} for session {} end at {} failed with error {} on thread {}", mContext.getRequest().getId(),
                 mContext.getRequest().getSessionId(), currentTime, error, Thread.currentThread().getId());
         try {
           // mRequest is null if an exception is thrown when initializing mRequest.
@@ -394,7 +399,7 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
         }
         replyError(error);
       } else if (eof || cancel) {
-        LOG.info("End reading data for read request {} for session {} end at {} successfully on thread {}.", mContext.getRequest().getId(),
+        LOG.info("End read data for read request {} for session {} end at {} successfully on thread {}.", mContext.getRequest().getId(),
                 mContext.getRequest().getSessionId(), currentTime, Thread.currentThread().getId());
         try {
           completeRequest(mContext);
