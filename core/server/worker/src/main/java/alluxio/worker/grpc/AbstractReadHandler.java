@@ -327,7 +327,7 @@ abstract class AbstractReadHandler<T extends ReadRequestContext<?>>
 
         DataBuffer chunk = null;
         try {
-          LOG.info("On read data for read request {} for session {} from {} to {} with chunk size {}  on thread {}", mContext.getRequest().getId(),
+          LOG.info("On read data for read request {} for session {} from {} with chunk size {}  on thread {}", mContext.getRequest().getId(),
                   mContext.getRequest().getSessionId(), mContext.getPosToQueue(),  chunkSize,  Thread.currentThread().getId());
           chunk = getDataBuffer(mContext, mResponse, start, chunkSize);
           if (chunk != null) {
