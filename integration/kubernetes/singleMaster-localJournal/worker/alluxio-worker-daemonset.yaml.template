@@ -17,22 +17,22 @@ metadata:
   name: alluxio-worker
   labels:
     app: alluxio
-    chart: alluxio-0.5.0
-    release: release-name
+    chart: alluxio-0.5.1
+    release: RELEASE-NAME
     heritage: Tiller
     role: alluxio-worker
 spec:
   selector:
     matchLabels:
       app: alluxio
-      release: release-name
+      release: RELEASE-NAME
       role: alluxio-worker
   template:
     metadata:
       labels:
         app: alluxio
-        chart: alluxio-0.5.0
-        release: release-name
+        chart: alluxio-0.5.1
+        release: RELEASE-NAME
         heritage: Tiller
         role: alluxio-worker
     spec:
@@ -54,6 +54,9 @@ spec:
         - name: alluxio-worker
           image: alluxio/alluxio:2.2.0-SNAPSHOT
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           resources:
             limits:
               cpu: 1
@@ -70,8 +73,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
-          - name: ALLUXIO_WORKER_JAVA_OPTS
-            value: " -Dalluxio.worker.hostname=$(ALLUXIO_WORKER_HOSTNAME) "
           envFrom:
           - configMapRef:
               name: alluxio-config
@@ -83,10 +84,11 @@ spec:
           volumeMounts:
             - name: alluxio-domain
               mountPath: /opt/domain
-            - mountPath: /dev/shm
-              name: mem
         - name: alluxio-job-worker
           image: alluxio/alluxio:2.2.0-SNAPSHOT
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -103,8 +105,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
-          - name: ALLUXIO_JOB_WORKER_JAVA_OPTS
-            value: " -Dalluxio.worker.hostname=$(ALLUXIO_WORKER_HOSTNAME) "
           envFrom:
           - configMapRef:
               name: alluxio-config
@@ -118,16 +118,10 @@ spec:
           volumeMounts:
             - name: alluxio-domain
               mountPath: /opt/domain
-            - mountPath: /dev/shm
-              name: mem
       restartPolicy: Always
       volumes:
         - name: alluxio-domain
           hostPath:
             path: /tmp/alluxio-domain
             type: DirectoryOrCreate
-        - name: mem
-          emptyDir:
-            medium: "Memory"
-            sizeLimit: 1G
 

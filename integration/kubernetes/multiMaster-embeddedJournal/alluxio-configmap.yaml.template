@@ -23,8 +23,8 @@ metadata:
   labels:
     name: alluxio-config
     app: alluxio
-    chart: alluxio-0.5.0
-    release: release-name
+    chart: alluxio-0.5.1
+    release: RELEASE-NAME
     heritage: Tiller
 data:
   ALLUXIO_JAVA_OPTS: |-

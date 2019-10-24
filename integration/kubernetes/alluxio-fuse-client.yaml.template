@@ -17,24 +17,24 @@ metadata:
   name: alluxio-fuse-client
   labels:
     app: alluxio
-    chart: alluxio-0.5.0
-    release: release-name
+    chart: alluxio-0.5.1
+    release: RELEASE-NAME
     heritage: Tiller
     role: alluxio-fuse-client
 spec:
   selector:
     matchLabels:
       app: alluxio
-      chart: alluxio-0.5.0
-      release: release-name
+      chart: alluxio-0.5.1
+      release: RELEASE-NAME
       heritage: Tiller
       role: alluxio-fuse-client
   template:
     metadata:
       labels:
         app: alluxio
-        chart: alluxio-0.5.0
-        release: release-name
+        chart: alluxio-0.5.1
+        release: RELEASE-NAME
         heritage: Tiller
         role: alluxio-fuse-client
     spec:
