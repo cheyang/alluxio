@@ -81,7 +81,7 @@ public class SpaceReserver implements HeartbeatExecutor {
       Preconditions.checkArgument(tierHighWatermarkConf > 0,
           "The high watermark of tier %s should be positive, but is %s", Integer.toString(ordinal),
           tierHighWatermarkConf);
-      Preconditions.checkArgument(tierHighWatermarkConf < 1,
+      Preconditions.checkArgument(tierHighWatermarkConf < 3,
           "The high watermark of tier %s should be less than 1.0, but is %s",
           Integer.toString(ordinal), tierHighWatermarkConf);
       long highWatermark = (long) (tierCapacity * tierHighWatermarkConf);
