@@ -310,7 +310,7 @@ public class BaseFileSystem implements FileSystem {
   public URIStatus getStatus(AlluxioURI path, final GetStatusPOptions options)
       throws FileDoesNotExistException, IOException, AlluxioException {
     checkUri(path);
-    return rpc(client -> {
+    return rpc("getStatus", client -> {
       GetStatusPOptions mergedOptions = FileSystemOptions.getStatusDefaults(
           mFsContext.getPathConf(path)).toBuilder().mergeFrom(options).build();
       return client.getStatus(path, mergedOptions);
@@ -408,7 +408,7 @@ public class BaseFileSystem implements FileSystem {
   public FileInStream openFile(AlluxioURI path, OpenFilePOptions options)
       throws FileDoesNotExistException, IOException, AlluxioException {
     checkUri(path);
-    return rpc(client -> {
+    return rpc("openFile", client -> {
       AlluxioConfiguration conf = mFsContext.getPathConf(path);
       URIStatus status = client.getStatus(path,
           FileSystemOptions.getStatusDefaults(conf).toBuilder()
@@ -591,6 +591,14 @@ public class BaseFileSystem implements FileSystem {
     R call(T t) throws IOException, AlluxioException;
   }
 
+  private <R> R rpc(String rpcName, RpcCallable<FileSystemMasterClient, R> fn)
+      throws IOException, AlluxioException {
+    LOG.info("START " + rpcName);
+    R ans = rpc(fn);
+    LOG.info("END " + rpcName);
+    return ans;
+  }
+
   /**
    * Sends an RPC to filesystem master.
    *
@@ -603,12 +611,20 @@ public class BaseFileSystem implements FileSystem {
    */
   private <R> R rpc(RpcCallable<FileSystemMasterClient, R> fn)
       throws IOException, AlluxioException {
+    long start = System.currentTimeMillis();
     try (ReinitBlockerResource r = mFsContext.blockReinit();
          CloseableResource<FileSystemMasterClient> client =
              mFsContext.acquireMasterClientResource()) {
+      long beforeConnect = System.currentTimeMillis();
+      LOG.info("Acquire client took " + (beforeConnect - start) + " ms");
       // Explicitly connect to trigger loading configuration from meta master.
       client.get().connect();
-      return fn.call(client.get());
+      long afterConnect = System.currentTimeMillis();
+      LOG.info("Connection took " + (afterConnect - beforeConnect) + " ms");
+      R ans = fn.call(client.get());
+      long rpcDone = System.currentTimeMillis();
+      LOG.info("RPC took " + (rpcDone - afterConnect) + " ms");
+      return ans;
     } catch (NotFoundException e) {
       throw new FileDoesNotExistException(e.getMessage());
     } catch (AlreadyExistsException e) {
