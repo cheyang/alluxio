@@ -11,10 +11,13 @@
 
 package alluxio.client.block.stream;
 
+import alluxio.client.ReadType;
 import alluxio.client.file.FileSystemContext;
 import alluxio.client.file.options.InStreamOptions;
 import alluxio.conf.AlluxioConfiguration;
 import alluxio.conf.PropertyKey;
+import alluxio.grpc.OpenLocalBlockRequest;
+import alluxio.grpc.OpenLocalBlockResponse;
 import alluxio.metrics.ClientMetrics;
 import alluxio.metrics.MetricsSystem;
 import alluxio.network.protocol.databuffer.DataBuffer;
@@ -22,6 +25,7 @@ import alluxio.network.protocol.databuffer.NioDataBuffer;
 import alluxio.wire.WorkerNetAddress;
 import alluxio.worker.block.io.LocalFileBlockReader;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import java.io.IOException;
@@ -90,14 +94,14 @@ public final class LocalFileDataReader implements DataReader {
    */
   @NotThreadSafe
   public static class Factory implements DataReader.Factory {
-    //private final BlockWorkerClient mBlockWorker;
+    private final BlockWorkerClient mBlockWorker;
     private final FileSystemContext mContext;
     private final WorkerNetAddress mAddress;
     private final long mBlockId;
     private final String mPath;
     private final long mLocalReaderChunkSize;
     private final int mReadBufferSize;
-    //private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
+    private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
 
     private LocalFileBlockReader mReader;
     private final long mDataTimeoutMs;
@@ -121,34 +125,37 @@ public final class LocalFileDataReader implements DataReader {
       mLocalReaderChunkSize = localReaderChunkSize;
       mReadBufferSize = conf.getInt(PropertyKey.USER_NETWORK_READER_BUFFER_SIZE_MESSAGES);
       mDataTimeoutMs = conf.getMs(PropertyKey.USER_NETWORK_DATA_TIMEOUT_MS);
+      boolean isDirectMemoryIOEnabled = conf.getBoolean(PropertyKey.USER_DIRECT_MEMORY_IO_ENABLED);
 
-      /*
-      boolean isPromote = ReadType.fromProto(options.getOptions().getReadType()).isPromote();
-      OpenLocalBlockRequest request = OpenLocalBlockRequest.newBuilder()
-          .setBlockId(mBlockId).setPromote(isPromote).build();
+      if (!isDirectMemoryIOEnabled) {
+        boolean isPromote = ReadType.fromProto(options.getOptions().getReadType()).isPromote();
+        OpenLocalBlockRequest request = OpenLocalBlockRequest.newBuilder()
+            .setBlockId(mBlockId).setPromote(isPromote).build();
 
-      mBlockWorker = context.acquireBlockWorkerClient(address);
-      try {
-        mStream = new GrpcBlockingStream<>(mBlockWorker::openLocalBlock, mReadBufferSize,
-            MoreObjects.toStringHelper(LocalFileDataReader.class)
-                .add("request", request)
-                .add("address", address)
-                .toString());
-        mStream.send(request, mDataTimeoutMs);
-        OpenLocalBlockResponse response = mStream.receive(mDataTimeoutMs);
-        Preconditions.checkState(response.hasPath());
-        mPath = response.getPath();
-      } catch (Exception e) {
-        context.releaseBlockWorkerClient(address, mBlockWorker);
-        throw e;
+        mBlockWorker = context.acquireBlockWorkerClient(address);
+        try {
+          mStream = new GrpcBlockingStream<>(mBlockWorker::openLocalBlock, mReadBufferSize,
+              MoreObjects.toStringHelper(LocalFileDataReader.class)
+                  .add("request", request)
+                  .add("address", address)
+                  .toString());
+          mStream.send(request, mDataTimeoutMs);
+          OpenLocalBlockResponse response = mStream.receive(mDataTimeoutMs);
+          Preconditions.checkState(response.hasPath());
+          mPath = response.getPath();
+        } catch (Exception e) {
+          context.releaseBlockWorkerClient(address, mBlockWorker);
+          throw e;
+        }
+      } else {
+        mBlockWorker = null;
+        mStream = null;
+        PropertyKey tierDirPathConf =
+            PropertyKey.Template.WORKER_TIERED_STORE_LEVEL_DIRS_PATH.format(0);
+        String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
+        String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
+        mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
       }
-      */
-
-      PropertyKey tierDirPathConf =
-          PropertyKey.Template.WORKER_TIERED_STORE_LEVEL_DIRS_PATH.format(0);
-      String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
-      String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
-      mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
     }
 
     @Override
@@ -174,16 +181,17 @@ public final class LocalFileDataReader implements DataReader {
       if (mReader != null) {
         mReader.close();
       }
-      /*
-      try {
-        mStream.close();
-        mStream.waitForComplete(mDataTimeoutMs);
-      } finally {
+      if (mStream != null) {
+        try {
+          mStream.close();
+          mStream.waitForComplete(mDataTimeoutMs);
+        } finally {
+          mClosed = true;
+          mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
+        }
+      } else {
         mClosed = true;
-        mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
       }
-      */
-      mClosed = true;
     }
   }
 }
