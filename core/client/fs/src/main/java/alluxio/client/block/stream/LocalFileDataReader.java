@@ -11,13 +11,10 @@
 
 package alluxio.client.block.stream;
 
-import alluxio.conf.AlluxioConfiguration;
-import alluxio.client.ReadType;
 import alluxio.client.file.FileSystemContext;
 import alluxio.client.file.options.InStreamOptions;
+import alluxio.conf.AlluxioConfiguration;
 import alluxio.conf.PropertyKey;
-import alluxio.grpc.OpenLocalBlockRequest;
-import alluxio.grpc.OpenLocalBlockResponse;
 import alluxio.metrics.ClientMetrics;
 import alluxio.metrics.MetricsSystem;
 import alluxio.network.protocol.databuffer.DataBuffer;
@@ -25,11 +22,11 @@ import alluxio.network.protocol.databuffer.NioDataBuffer;
 import alluxio.wire.WorkerNetAddress;
 import alluxio.worker.block.io.LocalFileBlockReader;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -93,14 +90,14 @@ public final class LocalFileDataReader implements DataReader {
    */
   @NotThreadSafe
   public static class Factory implements DataReader.Factory {
-    private final BlockWorkerClient mBlockWorker;
+    //private final BlockWorkerClient mBlockWorker;
     private final FileSystemContext mContext;
     private final WorkerNetAddress mAddress;
     private final long mBlockId;
     private final String mPath;
     private final long mLocalReaderChunkSize;
     private final int mReadBufferSize;
-    private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
+    //private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
 
     private LocalFileBlockReader mReader;
     private final long mDataTimeoutMs;
@@ -125,6 +122,7 @@ public final class LocalFileDataReader implements DataReader {
       mReadBufferSize = conf.getInt(PropertyKey.USER_NETWORK_READER_BUFFER_SIZE_MESSAGES);
       mDataTimeoutMs = conf.getMs(PropertyKey.USER_NETWORK_DATA_TIMEOUT_MS);
 
+      /*
       boolean isPromote = ReadType.fromProto(options.getOptions().getReadType()).isPromote();
       OpenLocalBlockRequest request = OpenLocalBlockRequest.newBuilder()
           .setBlockId(mBlockId).setPromote(isPromote).build();
@@ -144,6 +142,13 @@ public final class LocalFileDataReader implements DataReader {
         context.releaseBlockWorkerClient(address, mBlockWorker);
         throw e;
       }
+      */
+
+      PropertyKey tierDirPathConf =
+          PropertyKey.Template.WORKER_TIERED_STORE_LEVEL_DIRS_PATH.format(0);
+      String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
+      String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
+      mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
     }
 
     @Override
@@ -169,6 +174,7 @@ public final class LocalFileDataReader implements DataReader {
       if (mReader != null) {
         mReader.close();
       }
+      /*
       try {
         mStream.close();
         mStream.waitForComplete(mDataTimeoutMs);
@@ -176,6 +182,8 @@ public final class LocalFileDataReader implements DataReader {
         mClosed = true;
         mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
       }
+      */
+      mClosed = true;
     }
   }
 }

@@ -168,6 +168,17 @@ public final class AlluxioBlockStore {
              mContext.acquireBlockMasterClientResource()) {
       info = masterClientResource.get().getBlockInfo(blockId);
     }
+    return getInStream(info, options, failedWorkers);
+  }
+
+  /**
+   * @param info the block info
+   * @param options the options associated with the read request
+   * @param failedWorkers the map of workers address to most recent failure time
+   * @return a stream which reads from the beginning of the block
+   */
+  public BlockInStream getInStream(BlockInfo info, InStreamOptions options,
+      Map<WorkerNetAddress, Long> failedWorkers) throws IOException {
     List<BlockLocation> locations = info.getLocations();
     List<BlockWorkerInfo> blockWorkerInfo = Collections.EMPTY_LIST;
     // Initial target workers to read the block given the block locations.

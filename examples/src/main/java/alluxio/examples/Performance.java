@@ -47,7 +47,7 @@ public final class Performance {
   private static final Logger LOG = LoggerFactory.getLogger(Performance.class);
 
   private static final int RESULT_ARRAY_SIZE = 64;
-  private static final String FOLDER = "/mnt/ramdisk/";
+  private static final String FOLDER = "/Volumes/ramdisk/";
 
   private static String sFileName = null;
   private static int sBlockSizeBytes = -1;

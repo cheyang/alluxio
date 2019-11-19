@@ -29,6 +29,7 @@ import alluxio.exception.status.UnavailableException;
 import alluxio.grpc.AsyncCacheRequest;
 import alluxio.retry.CountingRetry;
 import alluxio.util.CommonUtils;
+import alluxio.wire.BlockInfo;
 import alluxio.wire.WorkerNetAddress;
 
 import com.google.common.base.Preconditions;
@@ -179,8 +180,14 @@ public class FileInStream extends InputStream implements BoundedStream, Position
     IOException lastException = null;
     while (bytesLeft > 0 && mPosition != mLength && retry.attempt()) {
       try {
+        long start = System.nanoTime();
         updateStream();
+        long streamUpdated = System.nanoTime();
+        LOG.info("Update stream took " + (streamUpdated - start) + " ns");
         int bytesRead = mBlockInStream.read(b, currentOffset, bytesLeft);
+        long done = System.nanoTime();
+        LOG.info("Read(offset=" + currentOffset + ", bytes=" + bytesLeft + ") took "
+          + (done - streamUpdated) + " ns");
         if (bytesRead > 0) {
           bytesLeft -= bytesRead;
           currentOffset += bytesRead;
@@ -323,8 +330,9 @@ public class FileInStream extends InputStream implements BoundedStream, Position
     /* Create a new stream to read from mPosition. */
     // Calculate block id.
     long blockId = mStatus.getBlockIds().get(Math.toIntExact(mPosition / mBlockSize));
+    BlockInfo blockInfo = mStatus.getBlockInfo(blockId);
     // Create stream
-    mBlockInStream = mBlockStore.getInStream(blockId, mOptions, mFailedWorkers);
+    mBlockInStream = mBlockStore.getInStream(blockInfo, mOptions, mFailedWorkers);
     // Set the stream to the correct position.
     long offset = mPosition % mBlockSize;
     mBlockInStream.seek(offset);

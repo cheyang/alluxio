@@ -255,14 +255,18 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
       mEOF = true;
     }
     if (mEOF) {
+      long beforeClose = System.nanoTime();
       closeDataReader();
+      LOG.info("Close DataReader took " + (System.nanoTime() - beforeClose) + " ns");
       Preconditions
           .checkState(mPos >= mLength, PreconditionMessage.BLOCK_LENGTH_INCONSISTENT.toString(),
               mId, mLength, mPos);
       return -1;
     }
     int toRead = Math.min(len, mCurrentChunk.readableBytes());
+    long beforeRead = System.nanoTime();
     mCurrentChunk.readBytes(b, off, toRead);
+    LOG.info("Read from chunk took " + (System.nanoTime() - beforeRead) + " ns");
     mPos += toRead;
     return toRead;
   }
@@ -364,15 +368,21 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
    */
   private void readChunk() throws IOException {
     if (mDataReader == null) {
+      long beforeCreate = System.nanoTime();
       mDataReader = mDataReaderFactory.create(mPos, mLength - mPos);
+      LOG.info("Create DataReader took " + (System.nanoTime() - beforeCreate) + " ns");
     }
 
     if (mCurrentChunk != null && mCurrentChunk.readableBytes() == 0) {
+      long beforeRelease = System.nanoTime();
       mCurrentChunk.release();
       mCurrentChunk = null;
+      LOG.info("Release chunk took " + (System.nanoTime() - beforeRelease) + " ns");
     }
     if (mCurrentChunk == null) {
+      long start = System.nanoTime();
       mCurrentChunk = mDataReader.readChunk();
+      LOG.info("Read chunk took " + (System.nanoTime() - start) + " ns");
     }
   }
 
