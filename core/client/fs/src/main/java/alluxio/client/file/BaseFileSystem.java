@@ -419,11 +419,25 @@ public class BaseFileSystem implements FileSystem {
         throw new FileDoesNotExistException(
             ExceptionMessage.CANNOT_READ_DIRECTORY.getMessage(status.getName()));
       }
-      OpenFilePOptions mergedOptions = FileSystemOptions.openFileDefaults(conf)
-          .toBuilder().mergeFrom(options).build();
-      InStreamOptions inStreamOptions = new InStreamOptions(status, mergedOptions, conf);
-      return new FileInStream(status, inStreamOptions, mFsContext);
+      return openFile(status, options);
     });
+  }
+
+  @Override
+  public FileInStream openFile(URIStatus status)
+      throws FileDoesNotExistException, IOException, AlluxioException {
+    return openFile(status, OpenFilePOptions.getDefaultInstance());
+  }
+
+  @Override
+  public FileInStream openFile(URIStatus status, OpenFilePOptions options)
+      throws FileDoesNotExistException, IOException, AlluxioException {
+    AlluxioURI path = new AlluxioURI(status.getPath());
+    AlluxioConfiguration conf = mFsContext.getPathConf(path);
+    OpenFilePOptions mergedOptions = FileSystemOptions.openFileDefaults(conf)
+        .toBuilder().mergeFrom(options).build();
+    InStreamOptions inStreamOptions = new InStreamOptions(status, mergedOptions, conf);
+    return new FileInStream(status, inStreamOptions, mFsContext);
   }
 
   @Override
