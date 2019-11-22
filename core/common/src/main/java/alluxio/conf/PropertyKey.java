@@ -3260,6 +3260,23 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.CLIENT)
           .build();
+  public static final PropertyKey USER_METADATA_CACHE_ENABLED =
+      new Builder(Name.USER_METADATA_CACHE_ENABLED)
+          .setDefaultValue(false)
+          .setDescription("If this is enabled, metadata of files will be cached. "
+              + "The cached metadata will be evicted only when the cache size is over the limit. "
+              + "So this should only be enabled when the files and directories are immutable "
+              + "during the lifecycle of the client.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.CLIENT)
+          .build();
+  public static final PropertyKey USER_METADATA_CACHE_MAX_SIZE =
+      new Builder(Name.USER_METADATA_CACHE_MAX_SIZE)
+          .setDefaultValue(100000)
+          .setDescription("Maximum number of files to cache the metadata.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.CLIENT)
+          .build();
 
   //
   // FUSE integration related properties
@@ -4373,6 +4390,10 @@ public final class PropertyKey implements Comparable<PropertyKey> {
         "alluxio.user.worker.list.refresh.interval";
     public static final String USER_DIRECT_MEMORY_IO_ENABLED =
         "alluxio.user.direct.memory.io.enabled";
+    public static final String USER_METADATA_CACHE_ENABLED =
+        "alluxio.user.metadata.cache.enabled";
+    public static final String USER_METADATA_CACHE_MAX_SIZE =
+        "alluxio.user.metadata.cache.max.size";
 
     //
     // FUSE integration related properties
