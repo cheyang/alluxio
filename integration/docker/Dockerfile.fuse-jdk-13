@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
 
 # ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 # disable JVM DNS cache
-RUN echo "networkaddress.cache.ttl=0" >> $JAVA_HOME/jre/lib/security/java.security
+RUN echo "networkaddress.cache.ttl=0" >> $JAVA_HOME/conf/security/java.security
 
 # if Alluxio user, group, gid, and uid aren't root|0
 # then create the alluxio user and set file permissions accordingly
