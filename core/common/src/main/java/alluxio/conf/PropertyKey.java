@@ -3317,6 +3317,14 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.CLIENT)
           .build();
+  public static final PropertyKey USER_DIRECT_MEMORY_IO_ENABLED =
+          new Builder(Name.USER_DIRECT_MEMORY_IO_ENABLED)
+                  .setDefaultValue(false)
+                  .setDescription("If this is enabled, when clients read from local worker, they read "
+                          + "the block directly from the first directory of the first tier of that worker.")
+                  .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+                  .setScope(Scope.CLIENT)
+                  .build();
   public static final PropertyKey USER_METADATA_CACHE_ENABLED =
       new Builder(Name.USER_METADATA_CACHE_ENABLED)
           .setDefaultValue(false)
@@ -4476,6 +4484,8 @@ public final class PropertyKey implements Comparable<PropertyKey> {
         "alluxio.user.metadata.cache.max.size";
     public static final String USER_METADATA_CACHE_EXPIRATION_TIME =
         "alluxio.user.metadata.cache.expiration.time";
+    public static final String USER_DIRECT_MEMORY_IO_ENABLED =
+            "alluxio.user.direct.memory.io.enabled";
 
     //
     // FUSE integration related properties
