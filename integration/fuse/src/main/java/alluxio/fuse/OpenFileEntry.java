@@ -34,7 +34,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 final class OpenFileEntry implements Closeable {
-  private final long mId;
+  private final Long mId;
   private final FileInStream mIn;
   private final FileOutStream mOut;
 
@@ -64,7 +64,7 @@ final class OpenFileEntry implements Closeable {
   /**
    * @return the id of the file
    */
-  public long getId() {
+  public Long getId() {
     return mId;
   }
 
