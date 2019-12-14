@@ -25,7 +25,38 @@ RUN cd /opt && \
     (if ls | grep -q ".tar.gz"; then tar -xzf *.tar.gz && rm *.tar.gz; fi) && \
     ln -s alluxio-* alluxio
 
-FROM openjdk:8-jdk-alpine
+# FROM openjdk:8-jdk-alpine
+FROM alpine:3.9
+
+# A few reasons for installing distribution-provided OpenJDK:
+# https://hub.docker.com/layers/openjdk/library/openjdk/8-jdk-alpine3.9/images/sha256-210ecd2595991799526a62a7099718b149e3bbefdb49764cc2a450048e0dd4c0
+
+# Default to UTF-8 file.encoding
+ENV LANG C.UTF-8
+
+# add a simple script that can auto-detect the appropriate JAVA_HOME value
+# based on whether the JDK or only the JRE is installed
+RUN { \
+    echo '#!/bin/sh'; \
+    echo 'set -e'; \
+    echo; \
+    echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
+  } > /usr/local/bin/docker-java-home \
+  && chmod +x /usr/local/bin/docker-java-home
+ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
+ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin
+
+ENV JAVA_VERSION 8u222
+ENV JAVA_ALPINE_VERSION 8.222.10-r0
+
+RUN set -x \
+  && apk add --no-cache \
+    openjdk8="$JAVA_ALPINE_VERSION" \
+    openjdk8-dbg="$JAVA_ALPINE_VERSION" \
+    bash \
+    su-exec \
+  && [ "$JAVA_HOME" = "$(docker-java-home)" ]
+
 ARG ALLUXIO_USERNAME=alluxio
 ARG ALLUXIO_GROUP=alluxio
 ARG ALLUXIO_UID=1000
