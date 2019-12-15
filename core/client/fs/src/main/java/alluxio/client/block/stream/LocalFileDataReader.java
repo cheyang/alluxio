@@ -27,6 +27,8 @@ import alluxio.worker.block.io.LocalFileBlockReader;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,6 +42,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public final class LocalFileDataReader implements DataReader {
   /** The file reader to read a local block. */
+  private static final Logger LOG = LoggerFactory.getLogger(GrpcDataWriter.class);
   private final LocalFileBlockReader mReader;
   private final long mEnd;
   private final long mChunkSize;
@@ -154,6 +157,7 @@ public final class LocalFileDataReader implements DataReader {
         String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
         String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
         mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
+        LOG.debug("Read data from Local reader {}.", mPath);
       }
     }
 
