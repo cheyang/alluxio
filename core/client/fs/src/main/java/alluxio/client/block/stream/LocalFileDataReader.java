@@ -157,7 +157,7 @@ public final class LocalFileDataReader implements DataReader {
         String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
         String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
         mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
-        LOG.debug("Read data from Local reader {}.", mPath);
+        LOG.info("Read data from Local reader {}.", mPath);
       }
     }
 
