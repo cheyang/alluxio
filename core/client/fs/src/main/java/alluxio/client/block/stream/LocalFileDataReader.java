@@ -42,7 +42,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public final class LocalFileDataReader implements DataReader {
   /** The file reader to read a local block. */
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcDataWriter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LocalFileDataReader.class);
   private final LocalFileBlockReader mReader;
   private final long mEnd;
   private final long mChunkSize;
