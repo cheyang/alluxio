@@ -182,8 +182,10 @@ public final class LocalFileDataReader implements DataReader {
                     mReader.close();
                 }
                 try {
-                    mStream.close();
-                    mStream.waitForComplete(mDataTimeoutMs);
+                    if (mStream != null){
+                        mStream.close();
+                        mStream.waitForComplete(mDataTimeoutMs);
+                    }
                 } finally {
                     mClosed = true;
                     mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
