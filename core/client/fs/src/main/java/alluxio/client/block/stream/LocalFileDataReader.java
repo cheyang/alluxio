@@ -30,6 +30,7 @@ import com.google.common.base.Preconditions;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -38,145 +39,156 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class LocalFileDataReader implements DataReader {
-  /** The file reader to read a local block. */
-  private final LocalFileBlockReader mReader;
-  private final long mEnd;
-  private final long mChunkSize;
-  private long mPos;
-  private boolean mClosed;
-
-  /**
-   * Creates an instance of {@link LocalFileDataReader}.
-   *
-   * @param reader the file reader to the block path
-   * @param offset the offset
-   * @param len the length to read
-   * @param chunkSize the chunk size
-   */
-  private LocalFileDataReader(LocalFileBlockReader reader, long offset, long len, long chunkSize) {
-    mReader = reader;
-    Preconditions.checkArgument(chunkSize > 0);
-    mPos = offset;
-    mEnd = Math.min(mReader.getLength(), offset + len);
-    mChunkSize = chunkSize;
-  }
-
-  @Override
-  public DataBuffer readChunk() throws IOException {
-    if (mPos >= mEnd) {
-      return null;
-    }
-    ByteBuffer buffer = mReader.read(mPos, Math.min(mChunkSize, mEnd - mPos));
-    DataBuffer dataBuffer = new NioDataBuffer(buffer, buffer.remaining());
-    mPos += dataBuffer.getLength();
-    MetricsSystem.counter(ClientMetrics.BYTES_READ_LOCAL).inc(dataBuffer.getLength());
-    MetricsSystem.meter(ClientMetrics.BYTES_READ_LOCAL_THROUGHPUT).mark(dataBuffer.getLength());
-    return dataBuffer;
-  }
-
-  @Override
-  public long pos() {
-    return mPos;
-  }
-
-  @Override
-  public void close() throws IOException {
-    if (mClosed) {
-      return;
-    }
-    mClosed = true;
-    mReader.decreaseUsageCount();
-  }
-
-  /**
-   * Factory class to create {@link LocalFileDataReader}s.
-   */
-  @NotThreadSafe
-  public static class Factory implements DataReader.Factory {
-    private final BlockWorkerClient mBlockWorker;
-    private final FileSystemContext mContext;
-    private final WorkerNetAddress mAddress;
-    private final long mBlockId;
-    private final String mPath;
-    private final long mLocalReaderChunkSize;
-    private final int mReadBufferSize;
-    private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
-
-    private LocalFileBlockReader mReader;
-    private final long mDataTimeoutMs;
+    /** The file reader to read a local block. */
+    private final LocalFileBlockReader mReader;
+    private final long mEnd;
+    private final long mChunkSize;
+    private long mPos;
     private boolean mClosed;
 
     /**
-     * Creates an instance of {@link Factory}.
+     * Creates an instance of {@link LocalFileDataReader}.
      *
-     * @param context the file system context
-     * @param address the worker address
-     * @param blockId the block ID
-     * @param localReaderChunkSize chunk size in bytes for local reads
-     * @param options the instream options
+     * @param reader the file reader to the block path
+     * @param offset the offset
+     * @param len the length to read
+     * @param chunkSize the chunk size
      */
-    public Factory(FileSystemContext context, WorkerNetAddress address, long blockId,
-        long localReaderChunkSize, InStreamOptions options) throws IOException {
-      AlluxioConfiguration conf = context.getClusterConf();
-      mContext = context;
-      mAddress = address;
-      mBlockId = blockId;
-      mLocalReaderChunkSize = localReaderChunkSize;
-      mReadBufferSize = conf.getInt(PropertyKey.USER_NETWORK_READER_BUFFER_SIZE_MESSAGES);
-      mDataTimeoutMs = conf.getMs(PropertyKey.USER_NETWORK_DATA_TIMEOUT_MS);
-
-      boolean isPromote = ReadType.fromProto(options.getOptions().getReadType()).isPromote();
-      OpenLocalBlockRequest request = OpenLocalBlockRequest.newBuilder()
-          .setBlockId(mBlockId).setPromote(isPromote).build();
-
-      mBlockWorker = context.acquireBlockWorkerClient(address);
-      try {
-        mStream = new GrpcBlockingStream<>(mBlockWorker::openLocalBlock, mReadBufferSize,
-            MoreObjects.toStringHelper(LocalFileDataReader.class)
-                .add("request", request)
-                .add("address", address)
-                .toString());
-        mStream.send(request, mDataTimeoutMs);
-        OpenLocalBlockResponse response = mStream.receive(mDataTimeoutMs);
-        Preconditions.checkState(response.hasPath());
-        mPath = response.getPath();
-      } catch (Exception e) {
-        context.releaseBlockWorkerClient(address, mBlockWorker);
-        throw e;
-      }
+    private LocalFileDataReader(LocalFileBlockReader reader, long offset, long len, long chunkSize) {
+        mReader = reader;
+        Preconditions.checkArgument(chunkSize > 0);
+        mPos = offset;
+        mEnd = Math.min(mReader.getLength(), offset + len);
+        mChunkSize = chunkSize;
     }
 
     @Override
-    public DataReader create(long offset, long len) throws IOException {
-      if (mReader == null) {
-        mReader = new LocalFileBlockReader(mPath);
-      }
-      Preconditions.checkState(mReader.getUsageCount() == 0);
-      mReader.increaseUsageCount();
-      return new LocalFileDataReader(mReader, offset, len, mLocalReaderChunkSize);
+    public DataBuffer readChunk() throws IOException {
+        if (mPos >= mEnd) {
+            return null;
+        }
+        ByteBuffer buffer = mReader.read(mPos, Math.min(mChunkSize, mEnd - mPos));
+        DataBuffer dataBuffer = new NioDataBuffer(buffer, buffer.remaining());
+        mPos += dataBuffer.getLength();
+        MetricsSystem.counter(ClientMetrics.BYTES_READ_LOCAL).inc(dataBuffer.getLength());
+        MetricsSystem.meter(ClientMetrics.BYTES_READ_LOCAL_THROUGHPUT).mark(dataBuffer.getLength());
+        return dataBuffer;
     }
 
     @Override
-    public boolean isShortCircuit() {
-      return true;
+    public long pos() {
+        return mPos;
     }
 
     @Override
     public void close() throws IOException {
-      if (mClosed) {
-        return;
-      }
-      if (mReader != null) {
-        mReader.close();
-      }
-      try {
-        mStream.close();
-        mStream.waitForComplete(mDataTimeoutMs);
-      } finally {
+        if (mClosed) {
+            return;
+        }
         mClosed = true;
-        mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
-      }
+        mReader.decreaseUsageCount();
     }
-  }
-}
+
+    /**
+     * Factory class to create {@link LocalFileDataReader}s.
+     */
+    @NotThreadSafe
+    public static class Factory implements DataReader.Factory {
+        private final BlockWorkerClient mBlockWorker;
+        private final FileSystemContext mContext;
+        private final WorkerNetAddress mAddress;
+        private final long mBlockId;
+        private final String mPath;
+        private final long mLocalReaderChunkSize;
+        private final int mReadBufferSize;
+        private final GrpcBlockingStream<OpenLocalBlockRequest, OpenLocalBlockResponse> mStream;
+
+        private LocalFileBlockReader mReader;
+        private final long mDataTimeoutMs;
+        private boolean mClosed;
+
+        /**
+         * Creates an instance of {@link Factory}.
+         *
+         * @param context the file system context
+         * @param address the worker address
+         * @param blockId the block ID
+         * @param localReaderChunkSize chunk size in bytes for local reads
+         * @param options the instream options
+         */
+        public Factory(FileSystemContext context, WorkerNetAddress address, long blockId,
+                       long localReaderChunkSize, InStreamOptions options) throws IOException {
+            AlluxioConfiguration conf = context.getClusterConf();
+            mContext = context;
+            mAddress = address;
+            mBlockId = blockId;
+            mLocalReaderChunkSize = localReaderChunkSize;
+            mReadBufferSize = conf.getInt(PropertyKey.USER_NETWORK_READER_BUFFER_SIZE_MESSAGES);
+            mDataTimeoutMs = conf.getMs(PropertyKey.USER_NETWORK_DATA_TIMEOUT_MS);
+            boolean isDirectMemoryIOEnabled = conf.getBoolean(PropertyKey.USER_DIRECT_MEMORY_IO_ENABLED);
+
+            boolean isPromote = ReadType.fromProto(options.getOptions().getReadType()).isPromote();
+            OpenLocalBlockRequest request = OpenLocalBlockRequest.newBuilder()
+                    .setBlockId(mBlockId).setPromote(isPromote).build();
+            if (!isDirectMemoryIOEnabled) {
+                mBlockWorker = context.acquireBlockWorkerClient(address);
+                try {
+                    mStream = new GrpcBlockingStream<>(mBlockWorker::openLocalBlock, mReadBufferSize,
+                            MoreObjects.toStringHelper(LocalFileDataReader.class)
+                                    .add("request", request)
+                                    .add("address", address)
+                                    .toString());
+                    mStream.send(request, mDataTimeoutMs);
+                    OpenLocalBlockResponse response = mStream.receive(mDataTimeoutMs);
+                    Preconditions.checkState(response.hasPath());
+                    mPath = response.getPath();
+                } catch (Exception e) {
+                    context.releaseBlockWorkerClient(address, mBlockWorker);
+                    throw e;
+                }
+            } else {
+                mBlockWorker = null;
+                mStream = null;
+                PropertyKey tierDirPathConf =
+                        PropertyKey.Template.WORKER_TIERED_STORE_LEVEL_DIRS_PATH.format(0);
+                String ramdiskPath = conf.get(tierDirPathConf).split(",")[0];
+                String workerDir = conf.get(PropertyKey.WORKER_DATA_FOLDER);
+                mPath = Paths.get(ramdiskPath, workerDir, Long.toString(blockId)).toString();
+            }
+        }
+
+
+            @Override
+            public DataReader create(long offset, long len) throws IOException {
+                if (mReader == null) {
+                    mReader = new LocalFileBlockReader(mPath);
+                }
+                Preconditions.checkState(mReader.getUsageCount() == 0);
+                mReader.increaseUsageCount();
+                return new LocalFileDataReader(mReader, offset, len, mLocalReaderChunkSize);
+            }
+
+            @Override
+            public boolean isShortCircuit() {
+                return true;
+            }
+
+            @Override
+            public void close() throws IOException {
+                if (mClosed) {
+                    return;
+                }
+                if (mReader != null) {
+                    mReader.close();
+                }
+                try {
+                    mStream.close();
+                    mStream.waitForComplete(mDataTimeoutMs);
+                } finally {
+                    mClosed = true;
+                    mContext.releaseBlockWorkerClient(mAddress, mBlockWorker);
+                }
+            }
+        }
+    }
 
