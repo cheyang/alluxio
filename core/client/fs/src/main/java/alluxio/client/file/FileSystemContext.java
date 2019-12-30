@@ -499,7 +499,7 @@ public final class FileSystemContext implements Closeable {
    */
   public void releaseBlockWorkerClient(WorkerNetAddress workerNetAddress,
       BlockWorkerClient client) {
-    if (client.isShutdown()) {
+    if (client == null || client.isShutdown()) {
       // Client might have been shutdown during reinitialization.
       return;
     }
