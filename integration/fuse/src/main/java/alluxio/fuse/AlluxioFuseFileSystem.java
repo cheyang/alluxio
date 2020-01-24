@@ -58,6 +58,8 @@ import ru.serce.jnrfuse.struct.FuseFileInfo;
 import ru.serce.jnrfuse.struct.Statvfs;
 import ru.serce.jnrfuse.struct.Timespec;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.InvalidPathException;
@@ -82,6 +84,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   private static final Logger LOG = LoggerFactory.getLogger(AlluxioFuseFileSystem.class);
   private static final int MAX_OPEN_FILES = Integer.MAX_VALUE;
   private static final int MAX_OPEN_WAITTIME_MS = 5000;
+  private static final String ramDiskDIR = "/mnt/ramdisk";
+  private static final String mntPoint = "/alluxio-fuse";
   /**
    * df command will treat -1 as an unknown value.
    */
@@ -370,59 +374,23 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
-    final AlluxioURI turi = mPathResolverCache.getUnchecked(path);
-    LOG.trace("getattr({}) [Alluxio: {}]", path, turi);
+    String targetPath = path;
+    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    File file = new File(targetPath);
+
+
+    LOG.trace("getattr({})", path);
     try {
-      URIStatus status = mFileSystem.getStatus(turi);
-      if (!status.isCompleted()) {
-        // Always block waiting for file to be completed except when the file is writing
-        // We do not want to block the writing process
-        if (!mOpenFiles.contains(PATH_INDEX, path) && !waitForFileCompleted(turi)) {
-          LOG.error("File {} is not completed", path);
-        }
-        status = mFileSystem.getStatus(turi);
-      }
-      long size = status.getLength();
-      stat.st_size.set(size);
 
-      // Sets block number to fulfill du command needs
-      // `st_blksize` is ignored in `getattr` according to
-      // https://github.com/libfuse/libfuse/blob/d4a7ba44b022e3b63fc215374d87ed9e930d9974/include/fuse.h#L302
-      // According to http://man7.org/linux/man-pages/man2/stat.2.html,
-      // `st_blocks` is the number of 512B blocks allocated
-      stat.st_blocks.set((int) Math.ceil((double) size / 512));
 
-      final long ctime_sec = status.getLastModificationTimeMs() / 1000;
-      // Keeps only the "residual" nanoseconds not caputred in citme_sec
-      final long ctime_nsec = (status.getLastModificationTimeMs() % 1000) * 1000;
-
-      stat.st_ctim.tv_sec.set(ctime_sec);
-      stat.st_ctim.tv_nsec.set(ctime_nsec);
-      stat.st_mtim.tv_sec.set(ctime_sec);
-      stat.st_mtim.tv_nsec.set(ctime_nsec);
-
-      if (mIsUserGroupTranslation) {
-        // Translate the file owner/group to unix uid/gid
-        // Show as uid==-1 (nobody) if owner does not exist in unix
-        // Show as gid==-1 (nogroup) if group does not exist in unix
-        stat.st_uid.set(AlluxioFuseUtils.getUid(status.getOwner()));
-        stat.st_gid.set(AlluxioFuseUtils.getGidFromGroupName(status.getGroup()));
+      if (file.isDirectory()) {
+        stat.st_mode.set(FileStat.S_IFDIR | 0755);
       } else {
-        stat.st_uid.set(UID);
-        stat.st_gid.set(GID);
+        stat.st_mode.set(FileStat.S_IFREG | 0444);
+        long size = file.length();
+        stat.st_size.set(size);
       }
-
-      int mode = status.getMode();
-      if (status.isFolder()) {
-        mode |= FileStat.S_IFDIR;
-      } else {
-        mode |= FileStat.S_IFREG;
-      }
-      stat.st_mode.set(mode);
       stat.st_nlink.set(1);
-    } catch (FileDoesNotExistException | InvalidPathException e) {
-      LOG.debug("Failed to get info of {}, path does not exist or is invalid", path);
-      return -ErrorCodes.ENOENT();
     } catch (Throwable t) {
       LOG.error("Failed to get info of {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
@@ -502,42 +470,6 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int open(String path, FuseFileInfo fi) {
-    final AlluxioURI uri = mPathResolverCache.getUnchecked(path);
-    // (see {@code man 2 open} for the structure of the flags bitfield)
-    // File creation flags are the last two bits of flags
-    final int flags = fi.flags.get();
-    LOG.trace("open({}, 0x{}) [Alluxio: {}]", path, Integer.toHexString(flags), uri);
-    if (mOpenFiles.size() >= MAX_OPEN_FILES) {
-      LOG.error("Cannot open {}: too many open files (MAX_OPEN_FILES: {})", path, MAX_OPEN_FILES);
-      return ErrorCodes.EMFILE();
-    }
-    FileInStream is;
-    try {
-      try {
-        is = mFileSystem.openFile(uri);
-      } catch (FileIncompleteException e) {
-        if (waitForFileCompleted(uri)) {
-          is = mFileSystem.openFile(uri);
-        } else {
-          throw e;
-        }
-      }
-    } catch (OpenDirectoryException e) {
-      LOG.error("Cannot open folder {}", path);
-      return -ErrorCodes.EISDIR();
-    } catch (FileIncompleteException e) {
-      LOG.error("Cannot open incomplete file {}", path);
-      return -ErrorCodes.EFAULT();
-    } catch (FileDoesNotExistException | InvalidPathException e) {
-      LOG.error("Failed to open file {}, path does not exist or is invalid", path);
-      return -ErrorCodes.ENOENT();
-    } catch (Throwable t) {
-      LOG.error("Failed to open file {}", path, t);
-      return AlluxioFuseUtils.getErrorCode(t);
-    }
-    long fid = mNextOpenFileId.getAndIncrement();
-    mOpenFiles.add(new OpenFileEntry(fid, path, is, null));
-    fi.fh.set(fid);
 
     return 0;
   }
@@ -564,26 +496,36 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
       return -ErrorCodes.EINVAL();
     }
+    String targetPath = path;
+    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    File file = new File(targetPath);
+    FileInputStream fis = null;
+
+    long length = file.length();
+    if (offset < length){
+      if (offset + size > length) {
+        LOG.trace("read({}, update from size {} to {})", path, size, length - offset);
+        size = length - offset;
+      }
+    } else {
+      return 0;
+    }
     LOG.trace("read({}, {}, {})", path, size, offset);
     final int sz = (int) size;
     final long fd = fi.fh.get();
-    OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
-    if (oe == null) {
-      LOG.error("Cannot find fd for {} in table", path);
-      return -ErrorCodes.EBADFD();
-    }
+    LOG.trace("fd is {}", fd);
 
+    final byte[] dest = new byte[sz];
     int rd = 0;
     int nread = 0;
-    if (oe.getIn() == null) {
-      LOG.error("{} was not open for reading", path);
-      return -ErrorCodes.EBADFD();
-    }
     try {
-      oe.getIn().seek(offset);
-      final byte[] dest = new byte[sz];
+      // create new file input stream
+      fis = new FileInputStream(targetPath);
+
+      fis.skip(offset);
+
       while (rd >= 0 && nread < size) {
-        rd = oe.getIn().read(dest, nread, sz - nread);
+        rd = fis.read(dest, nread, sz - nread);
         if (rd >= 0) {
           nread += rd;
         }
@@ -594,9 +536,21 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       } else if (nread > 0) {
         buf.put(0, dest, 0, nread);
       }
-    } catch (Throwable t) {
-      LOG.error("Failed to read file {}", path, t);
-      return AlluxioFuseUtils.getErrorCode(t);
+
+    } catch(Exception ex) {
+      // if any error occurs
+      ex.printStackTrace();
+      LOG.error("Failed to read file {}", path, ex);
+      return -ErrorCodes.EINVAL();
+    } finally {
+      // releases all system resources from the streams
+      if(fis!=null) {
+        try {
+          fis.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
     }
 
     return nread;
@@ -615,22 +569,24 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int readdir(String path, Pointer buff, FuseFillDir filter,
       @off_t long offset, FuseFileInfo fi) {
-    final AlluxioURI turi = mPathResolverCache.getUnchecked(path);
-    LOG.trace("readdir({}) [Alluxio: {}]", path, turi);
+
+    String[] pathnames;
+    String targetPath = path;
+    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    File dir = new File(targetPath);
+    pathnames = dir.list();
+
+    LOG.trace("readdir({})", path);
 
     try {
-      final List<URIStatus> ls = mFileSystem.listStatus(turi);
       // standard . and .. entries
       filter.apply(buff, ".", null, 0);
       filter.apply(buff, "..", null, 0);
 
-      for (final URIStatus file : ls) {
-        filter.apply(buff, file.getName(), null, 0);
+      for (final String filename : pathnames) {
+        filter.apply(buff, filename, null, 0);
       }
-    } catch (FileDoesNotExistException | InvalidPathException e) {
-      LOG.debug("Failed to read directory {}, path does not exist or is invalid", path);
-      return -ErrorCodes.ENOENT();
-    } catch (Throwable t) {
+    }  catch (Throwable t) {
       LOG.error("Failed to read directory {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }
