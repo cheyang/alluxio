@@ -131,11 +131,6 @@
       <id>alluxio.artifacts</id>
       <url>http://alluxio.artifacts.s3-website-us-east-1.amazonaws.com/release</url>
     </repository>
-    <repository>
-      <id>jnr-fuse</id>
-      <name>bintray</name>
-      <url>http://jcenter.bintray.com</url>
-    </repository>
   </repositories>
 
   <properties>
