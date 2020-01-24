@@ -346,22 +346,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int flush(String path, FuseFileInfo fi) {
     LOG.trace("flush({})", path);
-    final long fd = fi.fh.get();
-    OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
-    if (oe == null) {
-      LOG.error("Cannot find fd for {} in table", path);
-      return -ErrorCodes.EBADFD();
-    }
-    if (oe.getOut() != null) {
-      try {
-        oe.getOut().flush();
-      } catch (IOException e) {
-        LOG.error("Failed to flush {}", path, e);
-        return -ErrorCodes.EIO();
-      }
-    } else {
-      LOG.debug("Not flushing: {} was not open for writing", path);
-    }
+
     return 0;
   }
 
@@ -374,15 +359,12 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
-    String targetPath = path;
-    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    String targetPath = ramDiskDIR + path;
+//    targetPath.replaceAll(mntPoint, ramDiskDIR);
     File file = new File(targetPath);
-
 
     LOG.trace("getattr({})", path);
     try {
-
-
       if (file.isDirectory()) {
         stat.st_mode.set(FileStat.S_IFDIR | 0755);
       } else {
@@ -496,8 +478,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
       return -ErrorCodes.EINVAL();
     }
-    String targetPath = path;
-    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    String targetPath = ramDiskDIR + path;
     File file = new File(targetPath);
     FileInputStream fis = null;
 
@@ -571,8 +552,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       @off_t long offset, FuseFileInfo fi) {
 
     String[] pathnames;
-    String targetPath = path;
-    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    String targetPath = ramDiskDIR + path;
     File dir = new File(targetPath);
     pathnames = dir.list();
 
@@ -607,19 +587,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int release(String path, FuseFileInfo fi) {
     LOG.trace("release({})", path);
-    OpenFileEntry oe;
-    final long fd = fi.fh.get();
-    oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
-    mOpenFiles.remove(oe);
-    if (oe == null) {
-      LOG.error("Cannot find fd for {} in table", path);
-      return -ErrorCodes.EBADFD();
-    }
-    try {
-      oe.close();
-    } catch (IOException e) {
-      LOG.error("Failed closing {} [in]", path, e);
-    }
+
     return 0;
   }
 
