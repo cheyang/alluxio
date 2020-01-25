@@ -100,17 +100,6 @@
       </snapshots>
     </repository>
     <repository>
-      <id>bintray</id>
-      <name>bintray</name>
-      <url>http://jcenter.bintray.com</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
       <!-- for Pivotal's distribution -->
       <id>spring-releases</id>
       <name>Spring Release Repository</name>
