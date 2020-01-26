@@ -484,7 +484,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 //    String targetPath = ramDiskDIR + path;
     int bytesToRead=-1;
 
-    bytesToRead = (int) size;
+    bytesToRead = (int) Math.min(139793899-offset, size);
     byte[] bytesRead = new byte[bytesToRead];
     buf.put(0, bytesRead, 0, bytesToRead);
 
