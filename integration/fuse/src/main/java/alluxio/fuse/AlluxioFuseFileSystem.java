@@ -475,7 +475,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
-    LOG.info("readEntry({}, {}, {})", path, size, offset);
+    LOG.debug("readEntry({}, {}, {})", path, size, offset);
 
     if (size > Integer.MAX_VALUE) {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
