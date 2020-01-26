@@ -481,16 +481,20 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
       return -ErrorCodes.EINVAL();
     }
-    String targetPath = ramDiskDIR + path;
+//    String targetPath = ramDiskDIR + path;
     int bytesToRead=-1;
 
-    if (fileContents.containsKey(targetPath)) {
-      bytesToRead = (int) Math.min(fileContents.get(targetPath) - offset, size);
-      byte[] bytesRead = new byte[bytesToRead];
-      buf.put(0, bytesRead, 0, bytesToRead);
-    }else{
-      LOG.error("Failed to find the path in cache {}", targetPath);
-    }
+    bytesToRead = (int) size;
+    byte[] bytesRead = new byte[bytesToRead];
+    buf.put(0, bytesRead, 0, bytesToRead);
+
+//    if (fileContents.containsKey(targetPath)) {
+//      bytesToRead = (int) Math.min(fileContents.get(targetPath) - offset, size);
+//      byte[] bytesRead = new byte[bytesToRead];
+//      buf.put(0, bytesRead, 0, bytesToRead);
+//    }else{
+//      LOG.error("Failed to find the path in cache {}", targetPath);
+//    }
 
     return bytesToRead;
   }
