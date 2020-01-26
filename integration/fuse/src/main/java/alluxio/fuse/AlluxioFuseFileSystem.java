@@ -379,7 +379,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 //      LOG.error("Failed to get info of {}", path, t);
 //      return AlluxioFuseUtils.getErrorCode(t);
 //    }
-    stat.st_mode.set(FileStat.S_IFDIR | 0777);
+    stat.st_mode.set(FileStat.S_IFREG | 0777);
     stat.st_nlink.set(1);
     return 0;
   }
