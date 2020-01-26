@@ -82,7 +82,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   private static final int MAX_OPEN_WAITTIME_MS = 5000;
   private static final String ramDiskDIR = "/mnt/ramdisk";
   private static final String mntPoint = "/alluxio-fuse";
-  private final Map<String, ByteBuffer> fileContents;
+  private final Map<String, Integer> fileContents;
   /**
    * df command will treat -1 as an unknown value.
    */
@@ -485,11 +485,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     int bytesToRead=-1;
 
     if (fileContents.containsKey(targetPath)) {
-      ByteBuffer content = fileContents.get(targetPath).asReadOnlyBuffer();
-      bytesToRead = (int) Math.min(content.capacity() - offset, size);
+      bytesToRead = (int) Math.min(fileContents.get(targetPath) - offset, size);
       byte[] bytesRead = new byte[bytesToRead];
-      content.position((int) offset);
-      content.get(bytesRead, 0, bytesToRead);
       buf.put(0, bytesRead, 0, bytesToRead);
     }else{
       LOG.error("Failed to find the path in cache {}", targetPath);
@@ -537,7 +534,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
           Path p = Paths.get(fullPathName);
           byte[] contentBytes = Files.readAllBytes(p);
           LOG.info("put({}) into filter.", fullPathName);
-          fileContents.put(fullPathName, ByteBuffer.wrap(contentBytes));
+          fileContents.put(fullPathName, ByteBuffer.wrap(contentBytes).capacity());
         }
       }
     }  catch (Throwable t) {
