@@ -274,7 +274,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   public int create(String path, @mode_t long mode, FuseFileInfo fi) {
     final AlluxioURI uri = mPathResolverCache.getUnchecked(path);
     final int flags = fi.flags.get();
-    LOG.trace("create({}, {}) [Alluxio: {}]", path, Integer.toHexString(flags), uri);
+    LOG.info("create({}, {}) [Alluxio: {}]", path, Integer.toHexString(flags), uri);
 
     if (uri.getName().length() > MAX_NAME_LENGTH) {
       LOG.error("Failed to create {}, file name is longer than {} characters",
@@ -348,7 +348,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int flush(String path, FuseFileInfo fi) {
-    LOG.trace("flush({})", path);
+    LOG.info("flush({})", path);
 
     return 0;
   }
@@ -366,7 +366,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 //    targetPath.replaceAll(mntPoint, ramDiskDIR);
     File file = new File(targetPath);
 
-    LOG.trace("getattr({})", path);
+    LOG.info("getattr({})", path);
     try {
       if (file.isDirectory()) {
         stat.st_mode.set(FileStat.S_IFDIR | 0755);
@@ -402,7 +402,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int mkdir(String path, @mode_t long mode) {
     final AlluxioURI turi = mPathResolverCache.getUnchecked(path);
-    LOG.trace("mkdir({}) [Alluxio: {}]", path, turi);
+    LOG.info("mkdir({}) [Alluxio: {}]", path, turi);
     if (turi.getName().length() > MAX_NAME_LENGTH) {
       LOG.error("Failed to create directory {}, directory name is longer than {} characters",
           path, MAX_NAME_LENGTH);
@@ -455,7 +455,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int open(String path, FuseFileInfo fi) {
-
+    LOG.info("open({})", path);
     return 0;
   }
 
@@ -476,6 +476,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
+    LOG.info("readEntry({}, {}, {})", path, size, offset);
 
     if (size > Integer.MAX_VALUE) {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
@@ -488,16 +489,16 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     long length = file.length();
     if (offset < length){
       if (offset + size > length) {
-        LOG.trace("read({}, update from size {} to {})", path, size, length - offset);
+        LOG.info("read({}, update from size {} to {})", path, size, length - offset);
         size = length - offset;
       }
     } else {
       return 0;
     }
-    LOG.trace("read({}, {}, {})", path, size, offset);
+    LOG.info("read({}, {}, {})", path, size, offset);
     final int sz = (int) size;
     final long fd = fi.fh.get();
-    LOG.trace("fd is {}", fd);
+    LOG.info("fd is {}", fd);
 
     final byte[] dest = new byte[sz];
     int rd = 0;
@@ -554,12 +555,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   public int readdir(String path, Pointer buff, FuseFillDir filter,
       @off_t long offset, FuseFileInfo fi) {
 
+    LOG.info("readdir({})", path);
     String[] pathnames;
     String targetPath = ramDiskDIR + path;
     File dir = new File(targetPath);
     pathnames = dir.list();
 
-    LOG.trace("readdir({})", path);
+    LOG.info("readdir({})", path);
 
     try {
       // standard . and .. entries
@@ -589,7 +591,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int release(String path, FuseFileInfo fi) {
-    LOG.trace("release({})", path);
+    LOG.info("release({})", path);
 
     return 0;
   }
@@ -606,7 +608,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     final AlluxioURI oldUri = mPathResolverCache.getUnchecked(oldPath);
     final AlluxioURI newUri = mPathResolverCache.getUnchecked(newPath);
     final String name = newUri.getName();
-    LOG.trace("rename({}, {}) [Alluxio: {}, {}]", oldPath, newPath, oldUri, newUri);
+    LOG.info("rename({}, {}) [Alluxio: {}, {}]", oldPath, newPath, oldUri, newUri);
 
     if (name.length() > MAX_NAME_LENGTH) {
       LOG.error("Failed to rename {} to {}, name {} is longer than {} characters",
@@ -641,7 +643,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int rmdir(String path) {
-    LOG.trace("rmdir({})", path);
+    LOG.info("rmdir({})", path);
     return rmInternal(path);
   }
 
@@ -654,7 +656,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int statfs(String path, Statvfs stbuf) {
-    LOG.trace("statfs({})", path);
+    LOG.info("statfs({})", path);
     ClientContext ctx = ClientContext.create(sConf);
 
     try (BlockMasterClient blockClient =
@@ -712,7 +714,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int unlink(String path) {
-    LOG.trace("unlink({})", path);
+    LOG.info("unlink({})", path);
     return rmInternal(path);
   }
 
@@ -745,7 +747,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Cannot write more than Integer.MAX_VALUE");
       return ErrorCodes.EIO();
     }
-    LOG.trace("write({}, {}, {})", path, size, offset);
+    LOG.info("write({}, {}, {})", path, size, offset);
     final int sz = (int) size;
     final long fd = fi.fh.get();
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
