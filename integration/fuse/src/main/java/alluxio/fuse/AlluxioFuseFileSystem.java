@@ -527,8 +527,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 
       for (final String filename : pathnames) {
         filter.apply(buff, filename, null, 0);
-        if (!fileContents.containsKey(filename) ) {
-          String fullPathName = targetPath + "/" + filename;
+        String fullPathName = targetPath + "/" + filename;
+        File current = new File(fullPathName);
+        if (current.isDirectory()){
+          continue;
+        }
+
+        if (!fileContents.containsKey(fullPathName) ) {
           Path p = Paths.get(fullPathName);
           byte[] contentBytes = Files.readAllBytes(p);
           LOG.info("put({}) into filter.", fullPathName);
