@@ -361,24 +361,24 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
-    String targetPath = ramDiskDIR + path;
-//    targetPath.replaceAll(mntPoint, ramDiskDIR);
-    File file = new File(targetPath);
+//    String targetPath = ramDiskDIR + path;
+////    targetPath.replaceAll(mntPoint, ramDiskDIR);
+//    File file = new File(targetPath);
 
     LOG.info("getattr({})", path);
-    try {
-      if (file.isDirectory()) {
-        stat.st_mode.set(FileStat.S_IFDIR | 0755);
-      } else {
-        stat.st_mode.set(FileStat.S_IFREG | 0444);
-        long size = file.length();
-        stat.st_size.set(size);
-      }
-      stat.st_nlink.set(1);
-    } catch (Throwable t) {
-      LOG.error("Failed to get info of {}", path, t);
-      return AlluxioFuseUtils.getErrorCode(t);
-    }
+//    try {
+//      if (file.isDirectory()) {
+//        stat.st_mode.set(FileStat.S_IFDIR | 0755);
+//      } else {
+//        stat.st_mode.set(FileStat.S_IFREG | 0444);
+//        long size = file.length();
+//        stat.st_size.set(size);
+//      }
+//      stat.st_nlink.set(1);
+//    } catch (Throwable t) {
+//      LOG.error("Failed to get info of {}", path, t);
+//      return AlluxioFuseUtils.getErrorCode(t);
+//    }
 
     return 0;
   }
@@ -528,18 +528,18 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 
       for (final String filename : pathnames) {
         filter.apply(buff, filename, null, 0);
-        String fullPathName = targetPath + "/" + filename;
-        File current = new File(fullPathName);
-        if (current.isDirectory()){
-          continue;
-        }
-
-        if (!fileContents.containsKey(fullPathName) ) {
-          Path p = Paths.get(fullPathName);
-          byte[] contentBytes = Files.readAllBytes(p);
-          LOG.info("put({}) into filter.", fullPathName);
-          fileContents.put(fullPathName, ByteBuffer.wrap(contentBytes).capacity());
-        }
+//        String fullPathName = targetPath + "/" + filename;
+//        File current = new File(fullPathName);
+//        if (current.isDirectory()){
+//          continue;
+//        }
+//
+//        if (!fileContents.containsKey(fullPathName) ) {
+//          Path p = Paths.get(fullPathName);
+//          byte[] contentBytes = Files.readAllBytes(p);
+//          LOG.info("put({}) into filter.", fullPathName);
+//          fileContents.put(fullPathName, ByteBuffer.wrap(contentBytes).capacity());
+//        }
       }
     }  catch (Throwable t) {
       LOG.error("Failed to read directory {}", path, t);
