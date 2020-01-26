@@ -41,6 +41,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Maps;
 import jnr.ffi.Pointer;
 import jnr.ffi.types.gid_t;
 import jnr.ffi.types.mode_t;
@@ -61,14 +62,9 @@ import ru.serce.jnrfuse.struct.Timespec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.ByteBuffer;
+import java.nio.file.*;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -86,6 +82,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   private static final int MAX_OPEN_WAITTIME_MS = 5000;
   private static final String ramDiskDIR = "/mnt/ramdisk";
   private static final String mntPoint = "/alluxio-fuse";
+  private final Map<String, ByteBuffer> fileContents;
   /**
    * df command will treat -1 as an unknown value.
    */
@@ -172,6 +169,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     mPathResolverCache = null;
     Preconditions.checkArgument(mAlluxioRootPath.isAbsolute(),
         "alluxio root path should be absolute");
+
+    fileContents = Maps.newHashMap();
   }
 
   /**
@@ -483,62 +482,20 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       return -ErrorCodes.EINVAL();
     }
     String targetPath = ramDiskDIR + path;
-    File file = new File(targetPath);
-    FileInputStream fis = null;
+    int bytesToRead=-1;
 
-    long length = file.length();
-    if (offset < length){
-      if (offset + size > length) {
-        LOG.info("read({}, update from size {} to {})", path, size, length - offset);
-        size = length - offset;
-      }
-    } else {
-      return 0;
-    }
-    LOG.info("read({}, {}, {})", path, size, offset);
-    final int sz = (int) size;
-    final long fd = fi.fh.get();
-    LOG.info("fd is {}", fd);
-
-    final byte[] dest = new byte[sz];
-    int rd = 0;
-    int nread = 0;
-    try {
-      // create new file input stream
-      fis = new FileInputStream(targetPath);
-
-      fis.skip(offset);
-
-      while (rd >= 0 && nread < size) {
-        rd = fis.read(dest, nread, sz - nread);
-        if (rd >= 0) {
-          nread += rd;
-        }
-      }
-
-      if (nread == -1) { // EOF
-        nread = 0;
-      } else if (nread > 0) {
-        buf.put(0, dest, 0, nread);
-      }
-
-    } catch(Exception ex) {
-      // if any error occurs
-      ex.printStackTrace();
-      LOG.error("Failed to read file {}", path, ex);
-      return -ErrorCodes.EINVAL();
-    } finally {
-      // releases all system resources from the streams
-      if(fis!=null) {
-        try {
-          fis.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
+    if (fileContents.containsKey(targetPath)) {
+      ByteBuffer content = fileContents.get(targetPath).asReadOnlyBuffer();
+      bytesToRead = (int) Math.min(content.capacity() - offset, size);
+      byte[] bytesRead = new byte[bytesToRead];
+      content.position((int) offset);
+      content.get(bytesRead, 0, bytesToRead);
+      buf.put(0, bytesRead, 0, bytesToRead);
+    }else{
+      LOG.error("Failed to find the path in cache {}", targetPath);
     }
 
-    return nread;
+    return bytesToRead;
   }
 
   /**
@@ -570,6 +527,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 
       for (final String filename : pathnames) {
         filter.apply(buff, filename, null, 0);
+        if (!fileContents.containsKey(filename) ) {
+          String fullPathName = targetPath + "/" + filename;
+          Path p = Paths.get(fullPathName);
+          byte[] contentBytes = Files.readAllBytes(p);
+          LOG.info("put({}) into filter.", fullPathName);
+          fileContents.put(fullPathName, ByteBuffer.wrap(contentBytes));
+        }
       }
     }  catch (Throwable t) {
       LOG.error("Failed to read directory {}", path, t);
