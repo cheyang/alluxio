@@ -94,6 +94,9 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @VisibleForTesting
   public static final int MAX_NAME_LENGTH = 255;
 
+
+  public static long MOCK_FILE_SIZE = 139793899;
+
   private static InstancedConfiguration sConf =
       new InstancedConfiguration(ConfigurationUtils.defaults());
 
@@ -484,7 +487,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 //    String targetPath = ramDiskDIR + path;
     int bytesToRead=-1;
 
-    bytesToRead = (int) Math.min(139793899-offset, size);
+    bytesToRead = (int) Math.min(MOCK_FILE_SIZE-offset, size);
     byte[] bytesRead = new byte[bytesToRead];
     buf.put(0, bytesRead, 0, bytesToRead);
 

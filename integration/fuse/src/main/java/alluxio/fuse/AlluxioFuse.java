@@ -63,6 +63,12 @@ public final class AlluxioFuse {
 //    final FileSystem tfs = FileSystem.Factory.create(conf);
     final FileSystem tfs = null;
     final AlluxioFuseFileSystem fs = new AlluxioFuseFileSystem(tfs, opts, conf);
+
+    if (System.getenv("MOCK_FILE_SIZE") != null){
+      AlluxioFuseFileSystem.MOCK_FILE_SIZE = Long.parseLong(System.getenv("MOCK_FILE_SIZE"));
+      LOG.info("MOCK_FILE_SIZE is set: {}", AlluxioFuseFileSystem.MOCK_FILE_SIZE);
+    }
+
     final List<String> fuseOpts = opts.getFuseOpts();
     // Force direct_io in FUSE: writes and reads bypass the kernel page
     // cache and go directly to alluxio. This avoids extra memory copies
