@@ -361,26 +361,25 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
-//    String targetPath = ramDiskDIR + path;
-////    targetPath.replaceAll(mntPoint, ramDiskDIR);
-//    File file = new File(targetPath);
+    String targetPath = ramDiskDIR + path;
+//    targetPath.replaceAll(mntPoint, ramDiskDIR);
+    File file = new File(targetPath);
 
     LOG.info("getattr({})", path);
-//    try {
-//      if (file.isDirectory()) {
-//        stat.st_mode.set(FileStat.S_IFDIR | 0755);
-//      } else {
-//        stat.st_mode.set(FileStat.S_IFREG | 0444);
-//        long size = file.length();
-//        stat.st_size.set(size);
-//      }
-//      stat.st_nlink.set(1);
-//    } catch (Throwable t) {
-//      LOG.error("Failed to get info of {}", path, t);
-//      return AlluxioFuseUtils.getErrorCode(t);
-//    }
-    stat.st_mode.set(FileStat.S_IFREG | 0777);
-    stat.st_nlink.set(1);
+    try {
+      if (file.isDirectory()) {
+        stat.st_mode.set(FileStat.S_IFDIR | 0755);
+      } else {
+        stat.st_mode.set(FileStat.S_IFREG | 0444);
+        long size = file.length();
+        stat.st_size.set(size);
+      }
+      stat.st_nlink.set(1);
+    } catch (Throwable t) {
+      LOG.error("Failed to get info of {}", path, t);
+      return AlluxioFuseUtils.getErrorCode(t);
+    }
+    
     return 0;
   }
 
