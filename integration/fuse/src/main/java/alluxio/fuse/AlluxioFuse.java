@@ -73,7 +73,7 @@ public final class AlluxioFuse {
     // Force direct_io in FUSE: writes and reads bypass the kernel page
     // cache and go directly to alluxio. This avoids extra memory copies
     // in the write path.
-    fuseOpts.add("-odirect_io");
+    // fuseOpts.add("-odirect_io");
 
     try {
       fs.mount(Paths.get(opts.getMountPoint()), true, opts.isDebug(),
@@ -147,7 +147,7 @@ public final class AlluxioFuse {
       String alluxioRootValue = cli.getOptionValue("r");
 
       List<String> fuseOpts = new ArrayList<>();
-      boolean noUserMaxWrite = true;
+      boolean noUserMaxWrite = false;
       if (cli.hasOption("o")) {
         String[] fopts = cli.getOptionValues("o");
         // keep the -o

@@ -55,9 +55,9 @@ mount_fuse() {
   local alluxio_root=$2
   local full_mount_option=""
   if [[ ! -z "${mount_option}" ]]; then
-    full_mount_option="big_writes,${mount_option}"
+    full_mount_option="direct_io,${mount_option}"
   else
-    full_mount_option="big_writes"
+    full_mount_option="direct_io"
   fi
 
   if [[ ${NO_DAEMON} -eq "1" ]]; then
