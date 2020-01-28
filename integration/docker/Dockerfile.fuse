@@ -28,7 +28,7 @@ RUN cd /opt && \
 # Remove the UFS libraries from the container, as the fuse daemon doesn't need them
 RUN rm -rf /opt/alluxio/lib/*
 
-FROM ubuntu:16.04
+FROM cheyang/fuse3:ubuntu1910
 ARG ALLUXIO_USERNAME=alluxio
 ARG ALLUXIO_GROUP=alluxio
 ARG ALLUXIO_UID=1000
@@ -38,13 +38,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     add-apt-repository -y ppa:openjdk-r/ppa && \
 	apt-get update && \
 	apt-get install -y --no-install-recommends \
-	openjdk-8-jdk openjdk-8-jre-headless fuse && \
+	openjdk-8-jdk openjdk-8-jre-headless && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 # disable JVM DNS cache
 RUN echo "networkaddress.cache.ttl=0" >> $JAVA_HOME/jre/lib/security/java.security
+
+RUN ln -sfv /usr/lib/x86_64-linux-gnu/libfuse3.so /usr/lib/x86_64-linux-gnu/libfuse.so.2 && \
+    ln -sfv /usr/bin/fusermount3 /usr/bin/fusermount
 
 # if Alluxio user, group, gid, and uid aren't root|0
 # then create the alluxio user and set file permissions accordingly
