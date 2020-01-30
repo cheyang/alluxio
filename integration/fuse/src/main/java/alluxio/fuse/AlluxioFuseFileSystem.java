@@ -502,6 +502,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int open(String path, FuseFileInfo fi) {
+    long start = System.nanoTime();
     final AlluxioURI uri = mPathResolverCache.getUnchecked(path);
     // (see {@code man 2 open} for the structure of the flags bitfield)
     // File creation flags are the last two bits of flags
@@ -538,7 +539,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     long fid = mNextOpenFileId.getAndIncrement();
     mOpenFiles.add(new OpenFileEntry(fid, path, is, null));
     fi.fh.set(fid);
-
+    long end = System.nanoTime();
+    LOG.info("fuse open({}) [with FuseFileInfo: {}] takes {} ns", path, fi, end - start);
     return 0;
   }
 
@@ -559,7 +561,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
-
+    long start = System.nanoTime();
     if (size > Integer.MAX_VALUE) {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
       return -ErrorCodes.EINVAL();
@@ -598,7 +600,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to read file {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }
-
+    long end = System.nanoTime();
+    LOG.info("fuse read({}) [with FuseFileInfo: {}] takes {} ns", path, fi, end - start);
     return nread;
   }
 
