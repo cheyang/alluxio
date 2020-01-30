@@ -163,9 +163,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     final int maxCachedPaths = conf.getInt(PropertyKey.FUSE_CACHED_PATHS_MAX);
     mIsUserGroupTranslation
         = conf.getBoolean(PropertyKey.FUSE_USER_GROUP_TRANSLATION_ENABLED);
-    mPathResolverCache = CacheBuilder.newBuilder()
-        .maximumSize(maxCachedPaths)
-        .build(new PathCacheLoader());
+//    mPathResolverCache = CacheBuilder.newBuilder()
+//        .maximumSize(maxCachedPaths)
+//        .build(new PathCacheLoader());
+    mPathResolverCache = null;
 
     Preconditions.checkArgument(mAlluxioRootPath.isAbsolute(),
         "alluxio root path should be absolute");
