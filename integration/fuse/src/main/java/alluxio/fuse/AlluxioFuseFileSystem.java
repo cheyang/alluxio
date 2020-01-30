@@ -348,12 +348,12 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    * @param fi FileInfo data struct kept by FUSE
    * @return 0 on success, a negative value on error
    */
-  @Override
-  public int flush(String path, FuseFileInfo fi) {
-//    LOG.info("flush({})", path);
-
-    return 0;
-  }
+//  @Override
+//  public int flush(String path, FuseFileInfo fi) {
+////    LOG.info("flush({})", path);
+//
+//    return 0;
+//  }
 
   /**
    * Retrieves file attributes.
@@ -368,7 +368,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 //    targetPath.replaceAll(mntPoint, ramDiskDIR);
     File file = new File(targetPath);
 
-    LOG.info("getattr({})", path);
+//    LOG.info("getattr({})", path);
     try {
       if (file.isDirectory()) {
         stat.st_mode.set(FileStat.S_IFDIR | 0755);
@@ -455,11 +455,11 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    * @param fi FileInfo data structure kept by FUSE
    * @return 0 on success, a negative value on error
    */
-  @Override
-  public int open(String path, FuseFileInfo fi) {
-//    LOG.info("open({})", path);
-    return 0;
-  }
+//  @Override
+//  public int open(String path, FuseFileInfo fi) {
+////    LOG.info("open({})", path);
+//    return 0;
+//  }
 
   /**
    * Reads data from an open file.
@@ -516,13 +516,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   public int readdir(String path, Pointer buff, FuseFillDir filter,
       @off_t long offset, FuseFileInfo fi) {
 
-    LOG.info("readdir({})", path);
+//    LOG.info("readdir({})", path);
     String[] pathnames;
     String targetPath = ramDiskDIR + path;
     File dir = new File(targetPath);
     pathnames = dir.list();
 
-    LOG.info("readdir({})", path);
+//    LOG.info("readdir({})", path);
 
     try {
       // standard . and .. entries
@@ -562,12 +562,12 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    * @return 0. The return value is ignored by FUSE (any error should be reported
    *         on flush instead)
    */
-  @Override
-  public int release(String path, FuseFileInfo fi) {
-//    LOG.info("release({})", path);
-
-    return 0;
-  }
+//  @Override
+//  public int release(String path, FuseFileInfo fi) {
+////    LOG.info("release({})", path);
+//
+//    return 0;
+//  }
 
   /**
    * Renames a path.
