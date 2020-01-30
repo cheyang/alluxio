@@ -350,7 +350,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int flush(String path, FuseFileInfo fi) {
-    LOG.info("flush({})", path);
+//    LOG.info("flush({})", path);
 
     return 0;
   }
@@ -457,7 +457,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int open(String path, FuseFileInfo fi) {
-    LOG.info("open({})", path);
+//    LOG.info("open({})", path);
     return 0;
   }
 
@@ -564,7 +564,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int release(String path, FuseFileInfo fi) {
-    LOG.info("release({})", path);
+//    LOG.info("release({})", path);
 
     return 0;
   }
