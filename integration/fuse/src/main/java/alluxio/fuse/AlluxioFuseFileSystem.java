@@ -265,6 +265,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int create(String path, @mode_t long mode, FuseFileInfo fi) {
+    long start = System.nanoTime();
     final AlluxioURI uri = mPathResolverCache.getUnchecked(path);
     final int flags = fi.flags.get();
     LOG.trace("create({}, {}) [Alluxio: {}]", path, Integer.toHexString(flags), uri);
@@ -326,6 +327,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to create {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }
+    long end = System.nanoTime();
+    LOG.info("fuse create({})takes {} ns", path, end - start);
 
     return 0;
   }
@@ -341,6 +344,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int flush(String path, FuseFileInfo fi) {
+    long start = System.nanoTime();
     LOG.trace("flush({})", path);
     final long fd = fi.fh.get();
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
@@ -358,6 +362,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     } else {
       LOG.debug("Not flushing: {} was not open for writing", path);
     }
+    long end = System.nanoTime();
+    LOG.info("fuse flush({})takes {} ns", path, end - start);
     return 0;
   }
 
@@ -370,6 +376,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
+    long start = System.nanoTime();
     final AlluxioURI turi = mPathResolverCache.getUnchecked(path);
     LOG.trace("getattr({}) [Alluxio: {}]", path, turi);
     try {
@@ -427,6 +434,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to get info of {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }
+    long end = System.nanoTime();
+    LOG.info("fuse getattr({})takes {} ns", path, end - start);
 
     return 0;
   }
@@ -601,7 +610,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       return AlluxioFuseUtils.getErrorCode(t);
     }
     long end = System.nanoTime();
-    LOG.info("fuse read({}) [with FuseFileInfo: {}] takes {} ns", path, fi, end - start);
+    LOG.info("fuse read({})takes {} ns", path, end - start);
     return nread;
   }
 
@@ -618,6 +627,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int readdir(String path, Pointer buff, FuseFillDir filter,
       @off_t long offset, FuseFileInfo fi) {
+    long start = System.nanoTime();
     final AlluxioURI turi = mPathResolverCache.getUnchecked(path);
     LOG.trace("readdir({}) [Alluxio: {}]", path, turi);
 
@@ -637,7 +647,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to read directory {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }
-
+    long end = System.nanoTime();
+    LOG.info("fuse readdir({}) takes {} ns", path, end - start);
     return 0;
   }
 
@@ -653,6 +664,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int release(String path, FuseFileInfo fi) {
+    long start = System.nanoTime();
     LOG.trace("release({})", path);
     OpenFileEntry oe;
     final long fd = fi.fh.get();
@@ -667,6 +679,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     } catch (IOException e) {
       LOG.error("Failed closing {} [in]", path, e);
     }
+    long end = System.nanoTime();
+    LOG.info("fuse release({}) takes {} ns", path, end - start);
     return 0;
   }
 
