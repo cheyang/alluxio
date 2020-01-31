@@ -403,7 +403,15 @@ public class BaseFileSystem implements FileSystem {
   public FileInStream openFile(AlluxioURI path)
       throws FileDoesNotExistException, OpenDirectoryException, FileIncompleteException,
       IOException, AlluxioException {
-    return openFile(path, OpenFilePOptions.getDefaultInstance());
+    LOG.info("Start to openFile {}", path);
+    long start = System.nanoTime();
+    try {
+      return openFile(path, OpenFilePOptions.getDefaultInstance());
+    }finally {
+      long end = System.nanoTime();
+      LOG.info("openFile({}) takes {} ns", path, end - start);
+      LOG.info("End to openFile {}", path);
+    }
   }
 
   @Override

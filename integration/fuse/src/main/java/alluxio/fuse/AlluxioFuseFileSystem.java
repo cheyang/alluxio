@@ -364,17 +364,17 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int getattr(String path, FileStat stat) {
-    String targetPath = ramDiskDIR + path;
-//    targetPath.replaceAll(mntPoint, ramDiskDIR);
-    File file = new File(targetPath);
+//    String targetPath = ramDiskDIR + path;
+////    targetPath.replaceAll(mntPoint, ramDiskDIR);
+//    File file = new File(targetPath);
 
 //    LOG.info("getattr({})", path);
     try {
-      if (file.isDirectory()) {
+      if (path.length()>15) {
         stat.st_mode.set(FileStat.S_IFDIR | 0755);
       } else {
         stat.st_mode.set(FileStat.S_IFREG | 0444);
-        long size = file.length();
+        long size = MOCK_FILE_SIZE;
         stat.st_size.set(size);
       }
       stat.st_nlink.set(1);
