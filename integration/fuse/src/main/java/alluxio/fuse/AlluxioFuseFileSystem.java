@@ -370,7 +370,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
 
 //    LOG.info("getattr({})", path);
     try {
-      if (path.length()>15) {
+      if (path.length()<15) {
         stat.st_mode.set(FileStat.S_IFDIR | 0755);
       } else {
         stat.st_mode.set(FileStat.S_IFREG | 0444);
