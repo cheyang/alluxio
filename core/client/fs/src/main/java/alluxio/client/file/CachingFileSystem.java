@@ -47,6 +47,7 @@ public class CachingFileSystem extends BaseFileSystem {
 
   private final MetadataCache mMetadataCache;
   private final ExecutorService mAccessTimeUpdater;
+  private final boolean disableUpdateFileAccessTime;
 
   /**
    * @param context the fs context
@@ -61,6 +62,7 @@ public class CachingFileSystem extends BaseFileSystem {
     mMetadataCache = new MetadataCache(maxSize, expirationTimeMs);
     int masterClientThreads = mFsContext.getClusterConf()
         .getInt(PropertyKey.USER_FILE_MASTER_CLIENT_POOL_SIZE_MAX);
+    disableUpdateFileAccessTime = mFsContext.getClusterConf().getBoolean(PropertyKey.UPDATE_FILE_ACCESSTIME_DISABLED);
     // At a time point, there are at most the same number of concurrent master clients that
     // asynchronously update access time.
     mAccessTimeUpdater = new ThreadPoolExecutor(0, masterClientThreads, THREAD_KEEPALIVE_SECOND,
@@ -112,6 +114,9 @@ public class CachingFileSystem extends BaseFileSystem {
    */
   @VisibleForTesting
   public void asyncUpdateFileAccessTime(AlluxioURI path) {
+    if (disableUpdateFileAccessTime){
+      return;
+    }
     try {
       mAccessTimeUpdater.submit(() -> {
         try {
