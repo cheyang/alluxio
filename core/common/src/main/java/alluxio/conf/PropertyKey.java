@@ -3570,6 +3570,13 @@ public final class PropertyKey implements Comparable<PropertyKey> {
                   .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
                   .setScope(Scope.CLIENT)
                   .build();
+  public static final PropertyKey UPDATE_FILE_ACCESSTIME_DISABLED =
+          new Builder(Name.UPDATE_FILE_ACCESSTIME_DISABLED)
+                    .setDefaultValue(false)
+                    .setDescription("If this is enabled, the clients doesn't update file access time ")
+                    .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+                    .setScope(Scope.CLIENT)
+                    .build();
 
   //
   // FUSE integration related properties
@@ -4794,6 +4801,8 @@ public final class PropertyKey implements Comparable<PropertyKey> {
         "alluxio.user.worker.list.refresh.interval";
     public static final String USER_DIRECT_MEMORY_IO_ENABLED =
             "alluxio.user.direct.memory.io.enabled";
+    public static final String UPDATE_FILE_ACCESSTIME_DISABLED =
+            "alluxio.user.update.file.accesstime.disabled";
 
 
     //
