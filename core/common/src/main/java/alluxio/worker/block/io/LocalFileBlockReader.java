@@ -14,6 +14,8 @@ package alluxio.worker.block.io;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closer;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -28,6 +30,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class LocalFileBlockReader implements BlockReader {
+  private static final Logger LOG = LoggerFactory.getLogger(LocalFileBlockReader.class);
   private final String mFilePath;
   private final RandomAccessFile mLocalFile;
   private final FileChannel mLocalFileChannel;
@@ -42,6 +45,7 @@ public final class LocalFileBlockReader implements BlockReader {
    * @param path file path of the block
    */
   public LocalFileBlockReader(String path) throws IOException {
+    LOG.info("Creating new LocalFileBlockReader for path {}", path);
     mFilePath = Preconditions.checkNotNull(path, "path");
     mLocalFile = mCloser.register(new RandomAccessFile(mFilePath, "r"));
     mFileSize = mLocalFile.length();
@@ -62,6 +66,7 @@ public final class LocalFileBlockReader implements BlockReader {
    * increase the file reader usage count.
    */
   public void increaseUsageCount() {
+    LOG.info("increase usage count for block reader of path {}", mFilePath);
     mUsageCount++;
   }
 

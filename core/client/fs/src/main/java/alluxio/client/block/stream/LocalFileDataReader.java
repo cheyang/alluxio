@@ -28,6 +28,8 @@ import alluxio.worker.block.io.LocalFileBlockReader;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,6 +42,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class LocalFileDataReader implements DataReader {
+  private static final Logger LOG = LoggerFactory.getLogger(LocalFileDataReader.class);
   /** The file reader to read a local block. */
   private final LocalFileBlockReader mReader;
   private final long mEnd;
@@ -95,6 +98,7 @@ public final class LocalFileDataReader implements DataReader {
    */
   @NotThreadSafe
   public static class Factory implements DataReader.Factory {
+    private static final Logger LOG = LoggerFactory.getLogger(Factory.class);
     private final CloseableResource<BlockWorkerClient> mBlockWorker;
     private final long mBlockId;
     private final String mPath;
@@ -156,7 +160,9 @@ public final class LocalFileDataReader implements DataReader {
 
     @Override
     public DataReader create(long offset, long len) throws IOException {
+      LOG.info("Creating LocalFileDataReader with offset {} len {}", offset, len);
       if (mReader == null) {
+        LOG.info("LocalFileBlockReader of offset {} len {} is null, creating new");
         mReader = new LocalFileBlockReader(mPath);
       }
       Preconditions.checkState(mReader.getUsageCount() == 0);
