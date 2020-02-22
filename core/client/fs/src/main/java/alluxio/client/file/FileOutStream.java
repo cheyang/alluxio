@@ -110,7 +110,7 @@ public class FileOutStream extends AbstractOutStream {
         mUnderStorageOutputStream = null;
       } else { // Write is through to the under storage, create mUnderStorageOutputStream.
         GetWorkerOptions getWorkerOptions = GetWorkerOptions.defaults()
-            .setBlockWorkerInfos(mBlockStore.getEligibleWorkers())
+            .setBlockWorkerInfos(mContext.getCachedWorkers())
             .setBlockInfo(new BlockInfo()
                 .setBlockId(-1)
                 .setLength(0)); // not storing data to Alluxio, so block size is 0

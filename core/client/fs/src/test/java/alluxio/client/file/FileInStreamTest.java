@@ -131,7 +131,7 @@ public final class FileInStreamTest {
     mBlockStore = mock(AlluxioBlockStore.class);
     PowerMockito.mockStatic(AlluxioBlockStore.class);
     PowerMockito.when(AlluxioBlockStore.create(mContext)).thenReturn(mBlockStore);
-    PowerMockito.when(mBlockStore.getEligibleWorkers()).thenReturn(new ArrayList<>());
+    when(mContext.getCachedWorkers()).thenReturn(new ArrayList<>());
 
     // Set up BufferedBlockInStreams and caching streams
     mInStreams = new ArrayList<>();
@@ -144,7 +144,7 @@ public final class FileInStreamTest {
       final byte[] input = BufferUtils
           .getIncreasingByteArray((int) (i * BLOCK_LENGTH), (int) getBlockLength(i));
       mInStreams.add(new TestBlockInStream(input, i, input.length, false, mBlockSource));
-      when(mBlockStore.getEligibleWorkers())
+      when(mContext.getCachedWorkers())
           .thenReturn(Arrays.asList(new BlockWorkerInfo(new WorkerNetAddress(), 0, 0)));
       when(mBlockStore.getInStream(eq((long) i), any(InStreamOptions.class), any()))
           .thenAnswer(invocation -> {

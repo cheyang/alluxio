@@ -13,7 +13,6 @@ package alluxio.job.load;
 
 import alluxio.AlluxioURI;
 import alluxio.Constants;
-import alluxio.client.block.AlluxioBlockStore;
 import alluxio.client.block.BlockWorkerInfo;
 import alluxio.exception.status.FailedPreconditionException;
 import alluxio.job.AbstractVoidJobDefinition;
@@ -65,8 +64,7 @@ public final class LoadDefinition
     // Filter out workers which have no local job worker available.
     List<String> missingJobWorkerHosts = new ArrayList<>();
     List<BlockWorkerInfo> workers = new ArrayList<>();
-    for (BlockWorkerInfo worker :
-        AlluxioBlockStore.create(context.getFsContext()).getAllWorkers()) {
+    for (BlockWorkerInfo worker : context.getFsContext().getCachedWorkers()) {
       if (jobWorkersByAddress.containsKey(worker.getNetAddress().getHost())) {
         workers.add(worker);
       } else {
