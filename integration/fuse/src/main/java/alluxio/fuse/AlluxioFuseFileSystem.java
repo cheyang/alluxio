@@ -359,7 +359,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     } else {
       LOG.debug("Not flushing: {} was not open for writing", path);
     }
-    LOG.info("flush({}) takes {} ms", path,  System.currentTimeMillis() - start);
+    long period =  System.currentTimeMillis() - start;
+    if (period > 0) {
+      LOG.info("flush({}) takes {} ms", path,  period);
+    }
     return 0;
   }
 
@@ -430,7 +433,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to get info of {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }finally {
-      LOG.info("getattr({}) [Alluxio: {}] takes {} ms", path, turi, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("getattr({}) [Alluxio: {}] takes {} ms", path, turi, period);
+      }
     }
 
     return 0;
@@ -541,7 +547,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to open file {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }finally {
-      LOG.info("open({}) takes {} ms", path, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("open({}) takes {} ms", path, period);
+      }
     }
     long fid = mNextOpenFileId.getAndIncrement();
     mOpenFiles.add(new OpenFileEntry(fid, path, is, null));
@@ -579,7 +588,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
     if (oe == null) {
       LOG.error("Cannot find fd for {} in table", path);
-      LOG.info("read({}_{} failed, {}, {}) takes {} ms", path, fd, size, offset, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("read({}_{} failed, {}, {}) takes {} ms", path, fd, size, offset, period);
+      }
       return -ErrorCodes.EBADFD();
     }
 
@@ -587,7 +599,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     int nread = 0;
     if (oe.getIn() == null) {
       LOG.error("{} was not open for reading", path);
-      LOG.info("read({}_{} failed, {}, {}) takes {} ms", path, fd, size, offset, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("read({}_{} failed, {}, {}) takes {} ms", path, fd, size, offset, period);
+      }
       return -ErrorCodes.EBADFD();
     }
     try {
@@ -609,7 +624,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to read file {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     }finally {
-      LOG.info("read({}_{}, {}, {}) takes {} ms", path, fd, size, offset, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("read({}_{}, {}, {}) takes {} ms", path, fd, size, offset, period);
+      }
     }
 
     return nread;
@@ -648,7 +666,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Failed to read directory {}", path, t);
       return AlluxioFuseUtils.getErrorCode(t);
     } finally {
-      LOG.info("readdir({}) takes {} ms", path, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("readdir({}) takes {} ms", path, period);
+      }
     }
 
     return 0;
@@ -681,7 +702,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     } catch (IOException e) {
       LOG.error("Failed closing {} [in]", path, e);
     } finally {
-      LOG.info("release({}_{}) takes {} ms", path, fd, System.currentTimeMillis() - start);
+      long period =  System.currentTimeMillis() - start;
+      if (period > 0) {
+        LOG.info("release({}_{}) takes {} ms", path, fd, period);
+      }
     }
     return 0;
   }
