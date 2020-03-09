@@ -3562,6 +3562,14 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.CLIENT)
           .build();
+  public static final PropertyKey USER_DIRECT_MEMORY_IO_ENABLED =
+          new Builder(Name.USER_DIRECT_MEMORY_IO_ENABLED)
+                  .setDefaultValue(false)
+                  .setDescription("If this is enabled, when clients read from local worker, they read "
+                          + "the block directly from the first directory of the first tier of that worker.")
+                  .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+                  .setScope(Scope.CLIENT)
+                  .build();
 
   //
   // FUSE integration related properties
@@ -4784,6 +4792,9 @@ public final class PropertyKey implements Comparable<PropertyKey> {
         "alluxio.user.short.circuit.preferred";
     public static final String USER_WORKER_LIST_REFRESH_INTERVAL =
         "alluxio.user.worker.list.refresh.interval";
+    public static final String USER_DIRECT_MEMORY_IO_ENABLED =
+            "alluxio.user.direct.memory.io.enabled";
+
 
     //
     // FUSE integration related properties
