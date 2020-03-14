@@ -68,6 +68,7 @@ public class AlluxioFileInStream extends FileInStream {
 
   private final int mBlockWorkerClientReadRetry;
   private final URIStatus mStatus;
+  private final String mPath;
   private final InStreamOptions mOptions;
   private final AlluxioBlockStore mBlockStore;
   private final FileSystemContext mContext;
@@ -109,6 +110,7 @@ public class AlluxioFileInStream extends FileInStream {
       mPassiveCachingEnabled = conf.getBoolean(PropertyKey.USER_FILE_PASSIVE_CACHE_ENABLED);
       mBlockWorkerClientReadRetry = conf.getInt(PropertyKey.USER_BLOCK_WORKER_CLIENT_READ_RETRY);
       mStatus = status;
+      mPath = status.getPath();
       mOptions = options;
       mBlockStore = AlluxioBlockStore.create(mContext);
       mLength = mStatus.getLength();
@@ -128,6 +130,18 @@ public class AlluxioFileInStream extends FileInStream {
   /* Input Stream methods */
   @Override
   public int read() throws IOException {
+    LOG.debug("Enter: read()");
+    try {
+      int ret = readInternal();
+      LOG.debug("Exit ({}): read()", ret);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): read():", e);
+      throw e;
+    }
+  }
+
+  private int readInternal() throws IOException {
     if (mPosition == mLength) { // at end of file
       return -1;
     }
@@ -159,6 +173,18 @@ public class AlluxioFileInStream extends FileInStream {
 
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
+    LOG.debug("Enter: read(file={},off={},len={})", mPath, off, len);
+    try {
+      int ret = readInternal(b, off, len);
+      LOG.debug("Exit ({}): read(file={},off={},len={})", ret, mPath, off, len);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): read(file={},off={},len={}):", mPath, off, len, e);
+      throw e;
+    }
+  }
+
+  private int readInternal(byte[] b, int off, int len) throws IOException {
     Preconditions.checkArgument(b != null, PreconditionMessage.ERR_READ_BUFFER_NULL);
     Preconditions.checkArgument(off >= 0 && len >= 0 && len + off <= b.length,
         PreconditionMessage.ERR_BUFFER_STATE.toString(), b.length, off, len);
@@ -200,6 +226,18 @@ public class AlluxioFileInStream extends FileInStream {
 
   @Override
   public long skip(long n) throws IOException {
+    LOG.debug("Enter: skip(file={},n={})", mPath, n);
+    try {
+      long ret = skipInternal(n);
+      LOG.debug("Exit ({}): skip(file={},n={})", ret, mPath, n);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): skip(file={},pos={}):", mPath, n, e);
+      throw e;
+    }
+  }
+
+  private long skipInternal(long n) throws IOException {
     if (n <= 0) {
       return 0;
     }
@@ -225,7 +263,17 @@ public class AlluxioFileInStream extends FileInStream {
   /* Positioned Readable methods */
   @Override
   public int positionedRead(long pos, byte[] b, int off, int len) throws IOException {
-    return positionedReadInternal(pos, b, off, len);
+    LOG.debug("Enter: positionedRead(file={},pos={},off={},len={})", mPath, pos, off, len);
+    try {
+      int ret = positionedReadInternal(pos, b, off, len);
+      LOG.debug("Exit ({}): positionedRead(file={},pos={},off={},len={})",
+          ret, mPath, pos, off, len);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): positionedRead(file={},pos={},off={},len={}):",
+          mPath, pos, off, len, e);
+      throw e;
+    }
   }
 
   private int positionedReadInternal(long pos, byte[] b, int off, int len) throws IOException {
@@ -286,6 +334,17 @@ public class AlluxioFileInStream extends FileInStream {
 
   @Override
   public void seek(long pos) throws IOException {
+    LOG.debug("Enter: seek(file={},pos={})", mPath, pos);
+    try {
+      seekInternal(pos);
+      LOG.debug("Exit (OK): seek(file={},pos={})", mPath, pos);
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): seek(file={},pos={}):", mPath, pos, e);
+      throw e;
+    }
+  }
+
+  private void seekInternal(long pos) throws IOException {
     if (mPosition == pos) {
       return;
     }

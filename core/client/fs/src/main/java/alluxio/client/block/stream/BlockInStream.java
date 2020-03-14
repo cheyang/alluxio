@@ -122,7 +122,8 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
     // 3. the worker's domain socket is not configuered
     //      OR alluxio.user.short.circuit.preferred is true
     if (sourceIsLocal && shortCircuit && (shortCircuitPreferred || !sourceSupportsDomainSocket)) {
-      LOG.debug("Creating short circuit input stream for block {} @ {}", blockId, dataSource);
+      LOG.debug("Creating short circuit input stream for block {} ({}) @ {}",
+          blockId, status.getPath(), dataSource);
       try {
         return createLocalBlockInStream(context, dataSource, blockId, blockSize, options);
       } catch (NotFoundException e) {
@@ -134,8 +135,9 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
     }
 
     // gRPC
-    LOG.debug("Creating gRPC input stream for block {} @ {} from client {} reading through {}",
-        blockId, dataSource, NetworkAddressUtils.getClientHostName(alluxioConf), dataSource);
+    LOG.debug("Creating gRPC input stream for block {} ({}) @ {} from client {} reading through {}",
+        blockId, status.getPath(), dataSource, NetworkAddressUtils.getClientHostName(alluxioConf),
+        dataSource);
     return createGrpcBlockInStream(context, dataSource, dataSourceType, builder.buildPartial(),
         blockSize, options);
   }
@@ -249,6 +251,18 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
 
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
+    LOG.debug("Enter: read(id={},off={},len={})", mId, off, len);
+    try {
+      int ret = readInternal(b, off, len);
+      LOG.debug("Exit ({}): read(id={},off={},len={})", ret, mId, off, len);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): read(id={},off={},len={}):", mId,  off, len, e);
+      throw e;
+    }
+  }
+
+  private int readInternal(byte[] b, int off, int len) throws IOException {
     checkIfClosed();
     Preconditions.checkArgument(b != null, PreconditionMessage.ERR_READ_BUFFER_NULL);
     Preconditions.checkArgument(off >= 0 && len >= 0 && len + off <= b.length,
@@ -276,6 +290,18 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
 
   @Override
   public int positionedRead(long pos, byte[] b, int off, int len) throws IOException {
+    LOG.debug("Enter: positionedRead(id={},pos={},off={},len={})", mId, pos, off, len);
+    try {
+      int ret = positionedReadInternal(pos, b, off, len);
+      LOG.debug("Exit ({}): positionedRead(id={},pos={},off={},len={})", mId, ret, pos, off, len);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): positionedRead(id={},pos={},off={},len={}):", mId, pos, off, len, e);
+      throw e;
+    }
+  }
+
+  private int positionedReadInternal(long pos, byte[] b, int off, int len) throws IOException {
     if (len == 0) {
       return 0;
     }
@@ -319,6 +345,17 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
 
   @Override
   public void seek(long pos) throws IOException {
+    LOG.debug("Enter: seek(id={},pos={})", mId, pos);
+    try {
+      seekInternal(pos);
+      LOG.debug("Exit (OK): seek(id={},pos={})", mId, pos);
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): seek(id={},pos={}):", mId, pos, e);
+      throw e;
+    }
+  }
+
+  private void seekInternal(long pos) throws IOException {
     checkIfClosed();
     Preconditions.checkArgument(pos >= 0, PreconditionMessage.ERR_SEEK_NEGATIVE.toString(), pos);
     Preconditions
@@ -337,6 +374,18 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
 
   @Override
   public long skip(long n) throws IOException {
+    LOG.debug("Enter: skip(id={},n={})", mId,  n);
+    try {
+      long ret = skipInternal(n);
+      LOG.debug("Exit ({}): skip(id={},n={})", mId, ret, n);
+      return ret;
+    } catch (IOException e) {
+      LOG.debug("Exit (ERROR): skip(id={},pos={}):", mId, n, e);
+      throw e;
+    }
+  }
+
+  private long skipInternal(long n) throws IOException {
     checkIfClosed();
     if (n <= 0) {
       return 0;
