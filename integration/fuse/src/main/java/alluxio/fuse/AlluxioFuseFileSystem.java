@@ -63,10 +63,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -142,6 +139,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   private AtomicLong mNextOpenFileId = new AtomicLong(0);
   private final String mFsName;
 
+  private Map<ReadZeroFile, Boolean> mReadZeroFiles;
+
   /**
    * Creates a new instance of {@link AlluxioFuseFileSystem}.
    *
@@ -162,6 +161,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     mPathResolverCache = CacheBuilder.newBuilder()
         .maximumSize(maxCachedPaths)
         .build(new PathCacheLoader());
+
+    mReadZeroFiles = new HashMap();
 
     Preconditions.checkArgument(mAlluxioRootPath.isAbsolute(),
         "alluxio root path should be absolute");
@@ -630,6 +631,11 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
         }
         if (flagged) {
           LOG.error("read(file={},offset={},size={}): all bytes zero", path, offset, size);
+          mReadZeroFiles.put(new ReadZeroFile(path, offset, size), true);
+        } else {
+          if (mReadZeroFiles.containsKey(new ReadZeroFile(path, offset, size))){
+            LOG.error("read(file={},offset={},size={}): all bytes zero previously but it doesn't happen again.", path, offset, size);
+          }
         }
       }
 
