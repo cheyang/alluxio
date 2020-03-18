@@ -435,7 +435,7 @@ public class BlockInStream extends InputStream implements BoundedStream, Seekabl
       LoggingUtils.callAndLog(() -> {
         mDataReader.close();
         return null;
-      }, LOG, "mDataReader.release", "");
+      }, LOG, "mDataReader.close", "");
     }
     mDataReader = null;
   }

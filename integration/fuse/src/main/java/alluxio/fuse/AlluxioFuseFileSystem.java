@@ -596,19 +596,21 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     final int sz = (int) size;
     final long fd = fi.fh.get();
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
-    LOG.debug("OpenFileEntry: id={},in={}", oe.getId(), oe.getIn());
+    LOG.debug("OpenFileEntry: path={},id={},tid={}",
+        path, oe.getId(), Thread.currentThread().getId());
     if (oe == null) {
       LOG.error("Cannot find fd for {} in table", path);
       return -ErrorCodes.EBADFD();
     }
 
+    int rd = 0;
+    int nread = 0;
+    if (oe.getIn() == null) {
+      LOG.error("{} was not open for reading", path);
+      return -ErrorCodes.EBADFD();
+    }
+
     synchronized (oe) {
-      int rd = 0;
-      int nread = 0;
-      if (oe.getIn() == null) {
-        LOG.error("{} was not open for reading", path);
-        return -ErrorCodes.EBADFD();
-      }
       try {
         oe.getIn().seek(offset);
         final byte[] dest = new byte[sz];
@@ -707,12 +709,15 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       LOG.error("Cannot find fd for {} in table", path);
       return -ErrorCodes.EBADFD();
     }
-    try {
-      oe.close();
-    } catch (IOException e) {
-      LOG.error("Failed closing {} [in]", path, e);
+
+    synchronized (oe) {
+      try {
+        oe.close();
+      } catch (IOException e) {
+        LOG.error("Failed closing {} [in]", path, e);
+      }
+      return 0;
     }
-    return 0;
   }
 
   /**
