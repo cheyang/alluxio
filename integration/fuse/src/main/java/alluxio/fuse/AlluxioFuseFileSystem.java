@@ -596,8 +596,8 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     final int sz = (int) size;
     final long fd = fi.fh.get();
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
-    LOG.debug("OpenFileEntry: path={},id={},tid={}",
-        path, oe.getId(), Thread.currentThread().getId());
+    LOG.debug("OpenFileEntry: path={},fd={},id={},oe={},tid={}",
+        path, fd, oe.getId(), oe, Thread.currentThread().getId());
     if (oe == null) {
       LOG.error("Cannot find fd for {} in table", path);
       return -ErrorCodes.EBADFD();
@@ -625,15 +625,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
           nread = 0;
         } else if (nread > 0) {
           buf.put(0, dest, 0, nread);
-          boolean flagged = true;
-          for (int i = 0; i < sz; i++) {
-            if (dest[i] != 0) {
-              flagged = false;
-              break;
-            }
-          }
-          if (flagged) {
-            LOG.error("read(file={},offset={},size={}): all bytes zero", path, offset, size);
+          if (offset == 0 && size >= 8) {
+            LOG.warn("read(file={},offset={},size={}): first 8 bytes = {}", path, offset, size,
+                String.format("%2x %2x %2x %2x %2x %2x %2x %2x",
+                    dest[0], dest[1], dest[2], dest[3], dest[4], dest[5], dest[6], dest[7]));
           }
         }
       } catch (Throwable t) {
