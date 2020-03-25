@@ -631,6 +631,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
                 String.format("0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x",
                     dest[0], dest[1], dest[2], dest[3], dest[4], dest[5], dest[6], dest[7]),
                 String.format("0x%2x 0x%2x 0x%2x 0x%2x", dest[8], dest[9], dest[10], dest[11]));
+            LOG.warn("read(file={},offset={},size={}): first 8 bytes = {}, next 4 bytes = {}",
+                path, offset, size,
+                String.format("0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x",
+                    buf.getByte(0), buf.getByte(1), buf.getByte(2), buf.getByte(3),
+                    buf.getByte(4), buf.getByte(5), buf.getByte(6), buf.getByte(7)),
+                String.format("0x%2x 0x%2x 0x%2x 0x%2x",
+                    buf.getByte(8), buf.getByte(9), buf.getByte(10), buf.getByte(11)));
           }
         }
       } catch (Throwable t) {
