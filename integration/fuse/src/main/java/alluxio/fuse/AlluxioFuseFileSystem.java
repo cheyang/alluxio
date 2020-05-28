@@ -34,6 +34,7 @@ import alluxio.master.MasterClientContext;
 import alluxio.util.CommonUtils;
 import alluxio.util.ConfigurationUtils;
 import alluxio.util.WaitForOptions;
+import alluxio.util.logging.SamplingLogger;
 import alluxio.wire.BlockMasterInfo;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -80,6 +81,7 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public final class AlluxioFuseFileSystem extends FuseStubFS {
   private static final Logger LOG = LoggerFactory.getLogger(AlluxioFuseFileSystem.class);
+  private static final SamplingLogger SAMPLING_LOG = new SamplingLogger(LOG, 100);
   private static final int MAX_OPEN_FILES = Integer.MAX_VALUE;
   private static final int MAX_OPEN_WAITTIME_MS = 5000;
   /**
@@ -512,6 +514,12 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int open(String path, FuseFileInfo fi) {
+    LOG.info(
+        "Before open(path={},fd={}): OpenFiles {}, UsedDirectMem {}, MaxDirectMem {}",
+        path, fi.fh.get(), mOpenFiles.size(),
+        io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+        io.netty.util.internal.PlatformDependent.maxDirectMemory());
+
     final AlluxioURI uri = mPathResolverCache.getUnchecked(path);
     // (see {@code man 2 open} for the structure of the flags bitfield)
     // File creation flags are the last two bits of flags
@@ -549,6 +557,10 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
     mOpenFiles.add(new OpenFileEntry(fid, path, is, null));
     fi.fh.set(fid);
 
+    LOG.info("After open(path={},fd={}): OpenFiles {}, UsedDirectMem {}, MaxDirectMem {}",
+        path, fid, mOpenFiles.size(),
+        io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+        io.netty.util.internal.PlatformDependent.maxDirectMemory());
     return 0;
   }
 
@@ -569,14 +581,19 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   @Override
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
-
+    final long fd = fi.fh.get();
+    boolean logged = SAMPLING_LOG.info2(
+        "Before read(path={},fd={},size={},offset={}): OpenFiles {}, UsedDirectMem {}, "
+            + "MaxDirectMem {}",
+        path, fd, size, offset, mOpenFiles.size(),
+        io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+        io.netty.util.internal.PlatformDependent.maxDirectMemory());
     if (size > Integer.MAX_VALUE) {
       LOG.error("Cannot read more than Integer.MAX_VALUE");
       return -ErrorCodes.EINVAL();
     }
     LOG.trace("read({}, {}, {})", path, size, offset);
     final int sz = (int) size;
-    final long fd = fi.fh.get();
     OpenFileEntry oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
     if (oe == null) {
       LOG.error("Cannot find fd for {} in table", path);
@@ -609,6 +626,13 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       return AlluxioFuseUtils.getErrorCode(t);
     }
 
+    if (logged) {
+      LOG.info("After read(path={},fd={},size={},offset={}): OpenFiles {}, UsedDirectMem {}, "
+              + "MaxDirectMem {}",
+          path, fd, size, offset, mOpenFiles.size(),
+          io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+          io.netty.util.internal.PlatformDependent.maxDirectMemory());
+    }
     return nread;
   }
 
@@ -660,9 +684,16 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
    */
   @Override
   public int release(String path, FuseFileInfo fi) {
+    final long fd = fi.fh.get();
+    boolean logging = true; //(path.hashCode() % 2) == 1;
+    if (logging) {
+      LOG.info("Before release(path={},fd={}): OpenFiles {}, UsedDirectMem {}, MaxDirectMem {}",
+          path, fd, mOpenFiles.size(),
+          io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+          io.netty.util.internal.PlatformDependent.maxDirectMemory());
+    }
     LOG.trace("release({})", path);
     OpenFileEntry oe;
-    final long fd = fi.fh.get();
     oe = mOpenFiles.getFirstByField(ID_INDEX, fd);
     mOpenFiles.remove(oe);
     if (oe == null) {
@@ -673,6 +704,12 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       oe.close();
     } catch (IOException e) {
       LOG.error("Failed closing {} [in]", path, e);
+    }
+    if (logging) {
+      LOG.info("After release(path={},fd={}): OpenFiles {}, UsedDirectMem {}, MaxDirectMem {}",
+          path, fd, mOpenFiles.size(),
+          io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+          io.netty.util.internal.PlatformDependent.maxDirectMemory());
     }
     return 0;
   }

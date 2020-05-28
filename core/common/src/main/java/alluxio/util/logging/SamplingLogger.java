@@ -256,6 +256,19 @@ public class SamplingLogger implements Logger {
     }
   }
 
+  /**
+   * @param format format
+   * @param arguments arguments
+   * @return if the logged is written
+   */
+  public boolean info2(String format, Object... arguments) {
+    boolean logged = isInfoEnabled() && acquireLogPermission(format);
+    if (logged) {
+      mDelegate.info(format, arguments);
+    }
+    return logged;
+  }
+
   @Override
   public void warn(String msg) {
     if (isWarnEnabled() && acquireLogPermission(msg)) {
