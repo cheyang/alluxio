@@ -572,7 +572,7 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
     final long fd = fi.fh.get();
-    boolean logged = SAMPLING_LOG.info2(
+    LOG.info(
         "Before read(path={},fd={},size={},offset={}): OpenFiles {}, UsedDirectMem {}, "
             + "MaxDirectMem {}",
         path, fd, size, offset, mOpenFiles.size(),
@@ -616,13 +616,11 @@ public final class AlluxioFuseFileSystem extends FuseStubFS {
       return AlluxioFuseUtils.getErrorCode(t);
     }
 
-    if (logged) {
-      LOG.info("After read(path={},fd={},size={},offset={}): OpenFiles {}, UsedDirectMem {}, "
-              + "MaxDirectMem {}",
-          path, fd, size, offset, mOpenFiles.size(),
-          io.netty.util.internal.PlatformDependent.usedDirectMemory(),
-          io.netty.util.internal.PlatformDependent.maxDirectMemory());
-    }
+    LOG.info("After read(path={},fd={},size={},offset={}): OpenFiles {}, UsedDirectMem {}, "
+            + "MaxDirectMem {}",
+        path, fd, size, offset, mOpenFiles.size(),
+        io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+        io.netty.util.internal.PlatformDependent.maxDirectMemory());
     return nread;
   }
 
