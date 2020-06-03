@@ -288,7 +288,10 @@ public class GrpcBlockingStream<ReqT, ResT> {
     @Override
     public void onError(Throwable t) {
       try (LockResource lr = new LockResource(mLock)) {
-        LOG.warn("Received error {} for stream ({})", t, mDescription);
+        LOG.warn("Received error {} for stream ({}): ", t, mDescription, t);
+        LOG.warn("onError: UsedDirectMem {}, MaxDirectMem {}",
+            io.netty.util.internal.PlatformDependent.usedDirectMemory(),
+            io.netty.util.internal.PlatformDependent.maxDirectMemory());
         updateException(t);
         mReadyOrFailed.signal();
       }
