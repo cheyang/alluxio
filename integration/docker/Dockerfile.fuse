@@ -80,6 +80,10 @@ RUN if [ ${ENABLE_DYANMIC_USER} = "true" ] ; then \
        chmod -R 777 /mnt; \
     fi
 
+RUN if [ ${ENABLE_DYANMIC_USER} = "true" ] ; then \
+       echo "user_allow_other" >> /etc/fuse.conf
+    fi
+
 USER ${ALLUXIO_UID}
 
 ENTRYPOINT ["/entrypoint.sh"]
