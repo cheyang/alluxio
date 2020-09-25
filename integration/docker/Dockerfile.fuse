@@ -39,6 +39,7 @@ ARG ALLUXIO_USERNAME=alluxio
 ARG ALLUXIO_GROUP=alluxio
 ARG ALLUXIO_UID=1000
 ARG ALLUXIO_GID=1000
+ARG ENABLE_DYNAMIC_USER=false
 
 COPY libjnifuse.so /usr/lib/
 
@@ -80,6 +81,7 @@ RUN if [ ${ENABLE_DYNAMIC_USER} = "true" ] ; then \
        chmod -R 777 /mnt; \
     fi
 
+# Enable user_allow_other option for fuse in non-root mode
 RUN if [ ${ENABLE_DYNAMIC_USER} = "true" ] ; then \
        echo "user_allow_other" >> /etc/fuse.conf; \
     fi
